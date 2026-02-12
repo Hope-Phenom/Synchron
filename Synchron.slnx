@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="src\Synchron.Core\Synchron.Core.csproj" />
+  <Project Path="src\Synchron.Console\Synchron.Console.csproj" />
+  <Project Path="tests\Synchron.Core.Tests\Synchron.Core.Tests.csproj" />
+</Solution>
