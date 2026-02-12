@@ -143,11 +143,11 @@ public sealed class FileFilter : IFileFilter, IDisposable
         var fileName = Path.GetFileName(filePath);
         var normalizedPath = filePath.Replace('\\', '/');
 
-        if (_gitIgnoreRules.Count > 0 && !string.IsNullOrEmpty(_sourcePath))
+        if (_gitIgnoreRules.Count > 0 && !string.IsNullOrEmpty(_sourcePath) && _gitIgnoreParser != null)
         {
             var relativePath = GetRelativePath(_sourcePath, filePath);
             
-            if (_gitIgnoreParser!.IsIgnored(relativePath, isDirectory, _gitIgnoreRules))
+            if (_gitIgnoreParser.IsIgnored(relativePath, isDirectory, _gitIgnoreRules))
             {
                 _logger.Debug($"File excluded by gitignore: {filePath}");
                 return false;

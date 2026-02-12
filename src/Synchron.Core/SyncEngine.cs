@@ -7,14 +7,14 @@ namespace Synchron.Core;
 public sealed class SyncEngine : ISyncEngine, IDisposable
 {
     private readonly ILogger _logger;
-    private readonly FileFilter _fileFilter;
+    private readonly IFileFilter _fileFilter;
     private readonly ConfigManager _configManager;
     private readonly object _lock = new();
     private bool _disposed;
 
     public event EventHandler<SyncProgressEventArgs>? ProgressChanged;
 
-    public SyncEngine(ILogger logger, FileFilter fileFilter, ConfigManager configManager)
+    public SyncEngine(ILogger logger, IFileFilter fileFilter, ConfigManager configManager)
     {
         _logger = logger;
         _fileFilter = fileFilter;
