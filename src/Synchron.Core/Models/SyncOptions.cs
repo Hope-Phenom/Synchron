@@ -23,6 +23,7 @@ public class SyncOptions
     public string? LogFilePath { get; set; }
     public bool WatchMode { get; set; }
     public int WatchDebounceMs { get; set; } = 500;
+    public GitIgnoreOptions GitIgnore { get; set; } = new();
 }
 
 public enum SyncMode

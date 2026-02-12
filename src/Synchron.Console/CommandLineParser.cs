@@ -6,7 +6,7 @@ namespace Synchron.Console;
 
 public static class CommandLineParser
 {
-    private static readonly string Version = "1.0.0";
+    private static readonly string Version = "1.1.0";
 
     public static CommandLineOptions Parse(string[] args)
     {
@@ -41,12 +41,16 @@ public static class CommandLineParser
                     case "f":
                     case "filter":
                     case "include":
-                        options.IncludePatterns.Add(value ?? GetNextArg(args, ref i));
+                        var includeValue = value ?? GetNextArg(args, ref i);
+                        if (includeValue != null)
+                            options.IncludePatterns.Add(includeValue);
                         break;
 
                     case "e":
                     case "exclude":
-                        options.ExcludePatterns.Add(value ?? GetNextArg(args, ref i));
+                        var excludeValue = value ?? GetNextArg(args, ref i);
+                        if (excludeValue != null)
+                            options.ExcludePatterns.Add(excludeValue);
                         break;
 
                     case "w":
@@ -102,6 +106,20 @@ public static class CommandLineParser
 
                     case "logfile":
                         options.LogFilePath = value ?? GetNextArg(args, ref i);
+                        break;
+
+                    case "no-gitignore":
+                    case "nogitignore":
+                        options.NoGitIgnore = true;
+                        break;
+
+                    case "gitignore":
+                        options.GitIgnoreFile = value ?? GetNextArg(args, ref i);
+                        break;
+
+                    case "force-gitignore":
+                    case "forcegitignore":
+                        options.ForceGitIgnore = true;
                         break;
 
                     default:
@@ -213,8 +231,11 @@ public static class CommandLineParser
         help.AppendLine("      --conflict <mode>   Conflict resolution: overwrite, newer, skip, rename");
         help.AppendLine("      --buffer <size>     Buffer size in bytes (default: 1MB)");
         help.AppendLine("      --logfile <path>    Write logs to file");
-        help.AppendLine("  -v, --version           Show version information");
-        help.AppendLine("  -h, --help              Show this help message");
+        help.AppendLine();
+        help.AppendLine("GitIgnore Options:");
+        help.AppendLine("      --no-gitignore      Disable GitIgnore auto-detection");
+        help.AppendLine("      --gitignore <file>  Use external .gitignore file");
+        help.AppendLine("      --force-gitignore   Force use specified GitIgnore (skip auto-detection)");
         help.AppendLine();
         help.AppendLine("Sync Modes:");
         help.AppendLine("  diff    Copy new and changed files only (default)");
@@ -222,11 +243,18 @@ public static class CommandLineParser
         help.AppendLine("  move    Move files from source to target");
         help.AppendLine("  mirror  Make target an exact copy of source (delete extra files)");
         help.AppendLine();
+        help.AppendLine("GitIgnore Integration:");
+        help.AppendLine("  By default, Synchron auto-detects Git repositories and applies .gitignore");
+        help.AppendLine("  rules. Files matching .gitignore patterns will be excluded from sync.");
+        help.AppendLine();
         help.AppendLine("Examples:");
         help.AppendLine("  Synchron C:\\Source D:\\Backup");
         help.AppendLine("  Synchron C:\\Source D:\\Backup -m mirror --dry-run");
         help.AppendLine("  Synchron C:\\Source D:\\Backup -f *.txt -e *.tmp");
         help.AppendLine("  Synchron C:\\Source D:\\Backup -w -l debug");
+        help.AppendLine("  Synchron C:\\Source D:\\Backup --no-gitignore");
+        help.AppendLine("  Synchron C:\\Source D:\\Backup --gitignore .\\my-ignore.txt");
+        help.AppendLine("  Synchron C:\\Source D:\\Backup --gitignore .\\ignore.txt --force-gitignore");
         help.AppendLine();
 
         System.Console.WriteLine(help.ToString());

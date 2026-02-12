@@ -9,7 +9,7 @@
 [![.NET](https://img.shields.io/badge/.NET-8.0-512BD4?style=flat-square&logo=dotnet)](https://dotnet.microsoft.com/)
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
 [![Build](https://img.shields.io/badge/Build-Passing-brightgreen?style=flat-square)]()
-[![Tests](https://img.shields.io/badge/Tests-29%20Passed-success?style=flat-square)]()
+[![Tests](https://img.shields.io/badge/Tests-62%20Passed-success?style=flat-square)]()
 
 [English](#english) | [中文文档](#中文文档)
 
@@ -92,6 +92,7 @@
 | 开源免费 | ✅ | ✅ | ✅ | ✅ |
 | 跨平台 | ❌ (Windows) | ❌ (Windows) | ❌ (Windows) | ✅ |
 | 实时监控 | ✅ | ❌ | ❌ | ❌ |
+| GitIgnore 集成 | ✅ | ❌ | ❌ | ❌ |
 | 配置文件 | ✅ JSON | ❌ | ❌ | ✅ |
 | 模块化设计 | ✅ | ❌ | ❌ | ❌ |
 | .NET 原生 | ✅ | ❌ | ❌ | ❌ |
@@ -243,6 +244,11 @@ Synchron <source> <target> [options]
       --logfile <path>    日志文件路径
   -v, --version           显示版本信息
   -h, --help              显示帮助信息
+
+GitIgnore 选项:
+      --no-gitignore      禁用 GitIgnore 自动检测
+      --gitignore <file>  使用外部 .gitignore 文件
+      --force-gitignore   强制使用指定的 GitIgnore (跳过自动检测)
 ```
 
 ### 同步模式详解
@@ -327,6 +333,117 @@ Synchron C:\Source D:\Backup -f "*.txt" -e "*_test.txt"
 | `**` | 匹配任意字符（含路径分隔符） | `**/*.cs` |
 | `?` | 匹配单个字符 | `file?.txt` |
 
+### GitIgnore 集成
+
+Synchron 内置 GitIgnore 支持，可自动检测 Git 仓库并应用 `.gitignore` 规则进行文件过滤。
+
+#### 自动检测机制
+
+```
+源目录扫描流程:
+┌─────────────────────────────────────────────────────────────┐
+│  1. 向上扫描目录树，检测 .git 目录                           │
+│  2. 检测同目录及父目录中的 .gitignore 文件                   │
+│  3. 解析 .gitignore 规则并缓存                               │
+│  4. 应用规则过滤同步文件                                     │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### GitIgnore 命令行选项
+
+```bash
+# 默认行为：自动检测并应用 .gitignore 规则
+Synchron C:\MyProject D:\Backup
+
+# 禁用 GitIgnore 自动检测
+Synchron C:\Source D:\Backup --no-gitignore
+
+# 使用外部 .gitignore 文件
+Synchron C:\Source D:\Backup --gitignore C:\rules\.gitignore
+
+# 强制使用指定的 GitIgnore（跳过自动检测）
+Synchron C:\Source D:\Backup --gitignore .\my-rules.txt --force-gitignore
+```
+
+#### 配置文件中的 GitIgnore 设置
+
+```json
+{
+  "sourcePath": "C:\\Projects",
+  "targetPath": "D:\\Backup",
+  "gitIgnore": {
+    "enabled": true,
+    "autoDetect": true,
+    "externalGitIgnorePath": null,
+    "overrideAutoDetect": false
+  }
+}
+```
+
+#### GitIgnore 配置选项
+
+| 选项 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `enabled` | bool | `true` | 是否启用 GitIgnore 过滤 |
+| `autoDetect` | bool | `true` | 是否自动检测 Git 环境 |
+| `externalGitIgnorePath` | string | `null` | 外部 .gitignore 文件路径 |
+| `overrideAutoDetect` | bool | `false` | 是否覆盖自动检测 |
+
+#### 支持的 GitIgnore 语法
+
+Synchron 支持标准 `.gitignore` 语法：
+
+| 语法 | 说明 | 示例 |
+|------|------|------|
+| `*` | 匹配任意字符（不含 `/`） | `*.log` |
+| `**` | 匹配任意目录 | `**/temp/` |
+| `?` | 匹配单个字符 | `file?.txt` |
+| `[]` | 匹配字符范围 | `[abc].txt` |
+| `!` | 否定模式 | `!important.log` |
+| `/` | 目录分隔符 | `build/` |
+| `#` | 注释 | `# This is a comment` |
+
+#### GitIgnore 示例
+
+```gitignore
+# Build outputs
+bin/
+obj/
+*.dll
+*.exe
+
+# IDE settings
+.vs/
+.idea/
+*.user
+*.suo
+
+# Logs
+*.log
+logs/
+
+# Exceptions (negation)
+!important.dll
+!important.log
+```
+
+#### 配置优先级
+
+```
+优先级（从高到低）:
+1. 命令行参数 (--no-gitignore, --gitignore, --force-gitignore)
+2. 配置文件 (synchron.json 中的 gitIgnore 配置)
+3. 自动检测的 Git 环境
+4. 默认行为
+```
+
+#### 注意事项
+
+- GitIgnore 规则会被缓存以提高性能
+- 修改 `.gitignore` 文件后，缓存会自动更新
+- 外部 GitIgnore 文件支持相对路径和绝对路径
+- 使用 `--force-gitignore` 时会跳过自动检测，仅使用指定文件
+
 ### 实时监控模式
 
 ```bash
@@ -368,7 +485,13 @@ Synchron C:\Source D:\Backup -w -f "*.txt"
   "logLevel": "Info",
   "preserveTimestamps": true,
   "preserveAttributes": true,
-  "watchDebounceMs": 500
+  "watchDebounceMs": 500,
+  "gitIgnore": {
+    "enabled": true,
+    "autoDetect": true,
+    "externalGitIgnorePath": null,
+    "overrideAutoDetect": false
+  }
 }
 ```
 

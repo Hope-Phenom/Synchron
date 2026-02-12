@@ -23,4 +23,8 @@ public class CommandLineOptions
     public ConflictResolution? ConflictResolution { get; set; }
     public int BufferSize { get; set; }
     public string? LogFilePath { get; set; }
+    
+    public bool NoGitIgnore { get; set; }
+    public string? GitIgnoreFile { get; set; }
+    public bool ForceGitIgnore { get; set; }
 }

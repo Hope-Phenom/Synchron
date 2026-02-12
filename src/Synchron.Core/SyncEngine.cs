@@ -7,14 +7,14 @@ namespace Synchron.Core;
 public sealed class SyncEngine : ISyncEngine, IDisposable
 {
     private readonly ILogger _logger;
-    private readonly IFileFilter _fileFilter;
+    private readonly FileFilter _fileFilter;
     private readonly ConfigManager _configManager;
     private readonly object _lock = new();
     private bool _disposed;
 
     public event EventHandler<SyncProgressEventArgs>? ProgressChanged;
 
-    public SyncEngine(ILogger logger, IFileFilter fileFilter, ConfigManager configManager)
+    public SyncEngine(ILogger logger, FileFilter fileFilter, ConfigManager configManager)
     {
         _logger = logger;
         _fileFilter = fileFilter;
@@ -33,7 +33,7 @@ public sealed class SyncEngine : ISyncEngine, IDisposable
             if (cancellationToken.IsCancellationRequested)
                 break;
 
-            if (!_fileFilter.IsMatch(sourceFile.RelativePath))
+            if (!_fileFilter.IsMatch(sourceFile.RelativePath, sourceFile.IsDirectory))
                 continue;
 
             var targetPath = Path.Combine(options.TargetPath, sourceFile.RelativePath);
@@ -75,7 +75,7 @@ public sealed class SyncEngine : ISyncEngine, IDisposable
 
             foreach (var targetFile in targetFiles)
             {
-                if (!sourceRelativePaths.Contains(targetFile.RelativePath) && _fileFilter.IsMatch(targetFile.RelativePath))
+                if (!sourceRelativePaths.Contains(targetFile.RelativePath) && _fileFilter.IsMatch(targetFile.RelativePath, targetFile.IsDirectory))
                 {
                     preview.ToDelete.Add(targetFile);
                 }

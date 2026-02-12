@@ -9,7 +9,7 @@ public static class Program
     private static ILogger? _logger;
     private static SyncEngine? _syncEngine;
     private static ConfigManager? _configManager;
-    private static IFileFilter? _fileFilter;
+    private static FileFilter? _fileFilter;
 
     public static async Task<int> Main(string[] args)
     {
@@ -34,8 +34,10 @@ public static class Program
         if (!string.IsNullOrEmpty(cmdOptions.ConfigPath))
         {
             var configOptions = _configManager!.Load(cmdOptions.ConfigPath);
-            syncOptions = MergeOptions(configOptions, syncOptions);
+            syncOptions = MergeOptions(configOptions, syncOptions, cmdOptions);
         }
+
+        ApplyGitIgnoreOptions(syncOptions, cmdOptions);
 
         if (string.IsNullOrEmpty(syncOptions.SourcePath) || string.IsNullOrEmpty(syncOptions.TargetPath))
         {
@@ -46,6 +48,8 @@ public static class Program
             }
             return await RunInteractiveMode(syncOptions);
         }
+
+        InitializeFileFilterWithGitIgnore(syncOptions);
 
         if (cmdOptions.Watch)
         {
@@ -59,8 +63,8 @@ public static class Program
     {
         var logLevel = cmdOptions.LogLevel ?? (cmdOptions.Verbose ? LogLevel.Debug : LogLevel.Info);
         _logger = new Logger(logLevel, cmdOptions.LogFilePath);
-        _fileFilter = new FileFilter(_logger);
         _configManager = new ConfigManager(_logger);
+        _fileFilter = new FileFilter(_logger);
         _syncEngine = new SyncEngine(_logger, _fileFilter, _configManager);
     }
 
@@ -104,7 +108,49 @@ public static class Program
         return options;
     }
 
-    private static SyncOptions MergeOptions(SyncOptions baseOptions, SyncOptions overrideOptions)
+    private static void ApplyGitIgnoreOptions(SyncOptions options, CommandLineOptions cmdOptions)
+    {
+        if (cmdOptions.NoGitIgnore)
+        {
+            options.GitIgnore.Enabled = false;
+            _logger!.Info("GitIgnore disabled by command line");
+            return;
+        }
+
+        if (!string.IsNullOrEmpty(cmdOptions.GitIgnoreFile))
+        {
+            options.GitIgnore.ExternalGitIgnorePath = cmdOptions.GitIgnoreFile;
+            options.GitIgnore.OverrideAutoDetect = cmdOptions.ForceGitIgnore;
+            _logger!.Info($"External GitIgnore specified: {cmdOptions.GitIgnoreFile}" + 
+                         (cmdOptions.ForceGitIgnore ? " (with override)" : ""));
+        }
+    }
+
+    private static void InitializeFileFilterWithGitIgnore(SyncOptions options)
+    {
+        if (!options.GitIgnore.Enabled || string.IsNullOrEmpty(options.SourcePath))
+        {
+            return;
+        }
+
+        _fileFilter!.Dispose();
+        _fileFilter = new FileFilter(_logger!, options.SourcePath, options.GitIgnore);
+        _syncEngine = new SyncEngine(_logger!, _fileFilter, _configManager!);
+
+        foreach (var pattern in options.IncludePatterns)
+        {
+            _fileFilter.AddIncludePattern(pattern);
+        }
+
+        foreach (var pattern in options.ExcludePatterns)
+        {
+            _fileFilter.AddExcludePattern(pattern);
+        }
+
+        _logger!.Info($"GitIgnore filter initialized: {options.GitIgnore}");
+    }
+
+    private static SyncOptions MergeOptions(SyncOptions baseOptions, SyncOptions overrideOptions, CommandLineOptions cmdOptions)
     {
         if (!string.IsNullOrEmpty(overrideOptions.SourcePath))
             baseOptions.SourcePath = overrideOptions.SourcePath;
@@ -129,6 +175,14 @@ public static class Program
 
         if (overrideOptions.VerifyHash)
             baseOptions.VerifyHash = true;
+
+        if (!cmdOptions.NoGitIgnore && baseOptions.GitIgnore.Enabled)
+        {
+            if (overrideOptions.GitIgnore.Enabled)
+            {
+                baseOptions.GitIgnore = overrideOptions.GitIgnore.Clone();
+            }
+        }
 
         return baseOptions;
     }
@@ -166,6 +220,7 @@ public static class Program
     {
         _logger!.Info($"Starting sync: {options.SourcePath} -> {options.TargetPath}");
         _logger.Info($"Mode: {options.Mode}, DryRun: {dryRun}");
+        _logger.Info($"GitIgnore: {options.GitIgnore}");
 
         if (dryRun)
         {
