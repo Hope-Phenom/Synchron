@@ -1,4 +1,5 @@
-using System.Text.Json;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using Synchron.Core;
 using Synchron.Core.Interfaces;
 using Synchron.Core.Models;
@@ -189,8 +190,13 @@ public static class Program
 
     private static TaskListConfig CloneConfig(TaskListConfig config)
     {
-        var json = JsonSerializer.Serialize(config);
-        return JsonSerializer.Deserialize<TaskListConfig>(json) ?? new TaskListConfig();
+        var settings = new JsonSerializerSettings
+        {
+            ContractResolver = new Newtonsoft.Json.Serialization.CamelCasePropertyNamesContractResolver(),
+            Converters = { new StringEnumConverter(new Newtonsoft.Json.Serialization.CamelCaseNamingStrategy()) }
+        };
+        var json = JsonConvert.SerializeObject(config, settings);
+        return JsonConvert.DeserializeObject<TaskListConfig>(json, settings) ?? new TaskListConfig();
     }
 
     private static int CreateSampleTaskList(ILogger logger)

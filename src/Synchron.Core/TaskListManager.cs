@@ -1,5 +1,6 @@
 using System.Text;
-using System.Text.Json;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using Synchron.Core.Interfaces;
 using Synchron.Core.Models;
 
@@ -8,6 +9,14 @@ namespace Synchron.Core;
 public class TaskListManager
 {
     private readonly ILogger _logger;
+    
+    private static readonly JsonSerializerSettings JsonSettings = new()
+    {
+        Formatting = Formatting.Indented,
+        NullValueHandling = NullValueHandling.Ignore,
+        ContractResolver = new Newtonsoft.Json.Serialization.CamelCasePropertyNamesContractResolver(),
+        Converters = { new StringEnumConverter() }
+    };
 
     public TaskListManager(ILogger logger)
     {
@@ -24,11 +33,7 @@ public class TaskListManager
         try
         {
             var json = File.ReadAllText(configPath, Encoding.UTF8);
-            var config = JsonSerializer.Deserialize<TaskListConfig>(json, new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true,
-                ReadCommentHandling = JsonCommentHandling.Skip
-            });
+            var config = JsonConvert.DeserializeObject<TaskListConfig>(json, JsonSettings);
 
             if (config == null)
             {
@@ -57,13 +62,7 @@ public class TaskListManager
                 Directory.CreateDirectory(directory);
             }
 
-            var json = JsonSerializer.Serialize(config, new JsonSerializerOptions
-            {
-                WriteIndented = true,
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-                Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
-            });
-
+            var json = JsonConvert.SerializeObject(config, JsonSettings);
             File.WriteAllText(configPath, json, Encoding.UTF8);
             _logger.Info($"Task list config saved to: {configPath}");
         }

@@ -1,0 +1,105 @@
+﻿{
+  "name": "Sample Task List",
+  "tasks": [
+    {
+      "name": "Documents Backup",
+      "description": "Sync documents to backup folder",
+      "options": {
+        "sourcePath": "C:\\Users\\User\\Documents",
+        "targetPath": "D:\\Backup\\Documents",
+        "mode": 1,
+        "conflictResolution": 1,
+        "compareMethod": 2,
+        "includePatterns": [],
+        "excludePatterns": [],
+        "includeSubdirectories": true,
+        "dryRun": false,
+        "verifyHash": false,
+        "preserveTimestamps": true,
+        "preserveAttributes": true,
+        "bufferSize": 1048576,
+        "maxRetries": 3,
+        "retryDelayMs": 1000,
+        "logLevel": 1,
+        "logFilePath": null,
+        "watchMode": false,
+        "watchDebounceMs": 500,
+        "gitIgnore": {
+          "enabled": true,
+          "autoDetect": true,
+          "externalGitIgnorePath": null,
+          "overrideAutoDetect": false
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "Photos Backup",
+      "description": "Mirror photos to external drive",
+      "options": {
+        "sourcePath": "D:\\Photos",
+        "targetPath": "E:\\Photos",
+        "mode": 3,
+        "conflictResolution": 1,
+        "compareMethod": 2,
+        "includePatterns": [],
+        "excludePatterns": [],
+        "includeSubdirectories": true,
+        "dryRun": false,
+        "verifyHash": false,
+        "preserveTimestamps": true,
+        "preserveAttributes": true,
+        "bufferSize": 1048576,
+        "maxRetries": 3,
+        "retryDelayMs": 1000,
+        "logLevel": 1,
+        "logFilePath": null,
+        "watchMode": false,
+        "watchDebounceMs": 500,
+        "gitIgnore": {
+          "enabled": true,
+          "autoDetect": true,
+          "externalGitIgnorePath": null,
+          "overrideAutoDetect": false
+        }
+      },
+      "enabled": true
+    },
+    {
+      "name": "Project Sync",
+      "description": "Sync project files (disabled example)",
+      "options": {
+        "sourcePath": "C:\\Projects",
+        "targetPath": "D:\\Backup\\Projects",
+        "mode": 1,
+        "conflictResolution": 1,
+        "compareMethod": 2,
+        "includePatterns": [],
+        "excludePatterns": [],
+        "includeSubdirectories": true,
+        "dryRun": false,
+        "verifyHash": false,
+        "preserveTimestamps": true,
+        "preserveAttributes": true,
+        "bufferSize": 1048576,
+        "maxRetries": 3,
+        "retryDelayMs": 1000,
+        "logLevel": 1,
+        "logFilePath": null,
+        "watchMode": false,
+        "watchDebounceMs": 500,
+        "gitIgnore": {
+          "enabled": true,
+          "autoDetect": true,
+          "externalGitIgnorePath": null,
+          "overrideAutoDetect": false
+        }
+      },
+      "enabled": false
+    }
+  ],
+  "stopOnError": false,
+  "maxParallelTasks": 1,
+  "enabledTaskCount": 2,
+  "totalTaskCount": 3
+}
