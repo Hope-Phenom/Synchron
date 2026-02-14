@@ -4,470 +4,276 @@
 
 ![Synchron Logo](https://img.shields.io/badge/Synchron-File%20Sync%20Tool-blue?style=for-the-badge)
 
-**高性能文件同步工具**
+**High-Performance File Synchronization Tool**
 
 [![.NET](https://img.shields.io/badge/.NET-8.0-512BD4?style=flat-square&logo=dotnet)](https://dotnet.microsoft.com/)
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
 [![Build](https://img.shields.io/badge/Build-Passing-brightgreen?style=flat-square)]()
 [![Tests](https://img.shields.io/badge/Tests-83%20Passed-success?style=flat-square)]()
 
-[English](#english) | [中文文档](#中文文档)
+**English** | [中文文档](README_CN.md)
 
 </div>
 
 ---
 
-## 中文文档
+## Table of Contents
 
-### 目录
-
-- [项目介绍](#项目介绍)
-- [环境要求](#环境要求)
-- [安装步骤](#安装步骤)
-- [使用方法](#使用方法)
-- [开发指南](#开发指南)
-- [维护指南](#维护指南)
-- [贡献说明](#贡献说明)
+- [Overview](#overview)
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Development Guide](#development-guide)
+- [Troubleshooting](#troubleshooting)
+- [Contributing](#contributing)
 
 ---
 
-## 项目介绍
+## Overview
 
-### 核心功能
+**Synchron** is a high-performance file synchronization tool designed for Windows, featuring a modular architecture inspired by FastCopy. The core processing logic is encapsulated in an independent C# library, with a console application shell handling user interaction.
 
-**Synchron** 是一款专为 Windows 平台设计的高性能文件同步工具，采用模块化架构设计，灵感来源于 FastCopy 和 Windows 文件记录功能。项目将核心处理逻辑封装为独立的 C# 动态库，由控制台程序外壳负责调用和用户交互。
+### Key Features
 
-#### 主要特性
+| Feature | Description |
+|---------|-------------|
+| 🚀 **High Performance** | Async I/O and buffer optimization for efficient large file and bulk small file transfers |
+| 🔄 **Multiple Sync Modes** | Supports Diff (incremental), Sync, Move, and Mirror modes |
+| 👀 **Real-time Monitoring** | Directory change monitoring with automatic sync based on FileSystemWatcher |
+| 🎯 **Smart Filtering** | Wildcard and regex support for file inclusion/exclusion rules |
+| 📊 **Progress Reporting** | Real-time sync progress with file count, transfer speed statistics |
+| ⚙️ **Flexible Configuration** | JSON config files and command-line parameters |
+| 📝 **Detailed Logging** | Multi-level logging with console color output and file logging |
+| 🔒 **Safe & Reliable** | File verification, retry mechanism, and error handling |
 
-| 特性 | 描述 |
-|------|------|
-| 🚀 **高性能同步** | 采用异步 I/O 和缓冲优化，支持大文件和大量小文件的高效传输 |
-| 🔄 **多种同步模式** | 支持 Diff（增量）、Sync（同步）、Move（移动）、Mirror（镜像）四种模式 |
-| 👀 **实时监控** | 基于 FileSystemWatcher 的目录变化实时监控与自动同步 |
-| 🎯 **智能过滤** | 支持通配符和正则表达式的文件包含/排除规则 |
-| 📊 **进度报告** | 实时同步进度反馈，包括文件数量、传输速度等统计信息 |
-| ⚙️ **灵活配置** | 支持 JSON 配置文件和命令行参数双重配置方式 |
-| 📝 **详细日志** | 多级别日志系统，支持控制台彩色输出和文件日志 |
-| 🔒 **安全可靠** | 支持文件校验、重试机制和错误处理 |
+### Comparison with Similar Tools
 
-### 设计理念
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                     Synchron 架构设计                        │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  ┌─────────────────┐       ┌─────────────────────────────┐ │
-│  │  Console Shell  │       │       Synchron.Core         │ │
-│  │  (用户交互层)    │──────▶│       (核心处理层)           │ │
-│  └─────────────────┘       └─────────────────────────────┘ │
-│         │                              │                    │
-│         │                              │                    │
-│         ▼                              ▼                    │
-│  ┌─────────────────┐       ┌─────────────────────────────┐ │
-│  │ Command Parser  │       │  ┌───────┐  ┌───────────┐   │ │
-│  │ Interactive Menu│       │  │Logger │  │FileFilter │   │ │
-│  └─────────────────┘       │  └───────┘  └───────────┘   │ │
-│                            │  ┌───────────┐ ┌──────────┐  │ │
-│                            │  │SyncEngine │ │FileWatch │  │ │
-│                            │  └───────────┘ └──────────┘  │ │
-│                            │  ┌───────────────────────┐   │ │
-│                            │  │    ConfigManager      │   │ │
-│                            │  └───────────────────────┘   │ │
-│                            └─────────────────────────────┘ │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
-```
-
-### 目标用户群体
-
-- **开发人员**：代码备份、项目同步、构建产物分发
-- **系统管理员**：服务器文件同步、日志归档、配置分发
-- **普通用户**：文件夹备份、数据迁移、文档同步
-
-### 与同类工具对比
-
-| 功能特性 | Synchron | FastCopy | Robocopy | rsync |
+| Feature | Synchron | FastCopy | Robocopy | rsync |
 |---------|----------|----------|----------|-------|
-| 开源免费 | ✅ | ✅ | ✅ | ✅ |
-| 跨平台 | ❌ (Windows) | ❌ (Windows) | ❌ (Windows) | ✅ |
-| 实时监控 | ✅ | ❌ | ❌ | ❌ |
-| GitIgnore 集成 | ✅ | ❌ | ❌ | ❌ |
-| 配置文件 | ✅ JSON | ❌ | ❌ | ✅ |
-| 模块化设计 | ✅ | ❌ | ❌ | ❌ |
-| .NET 原生 | ✅ | ❌ | ❌ | ❌ |
-| 命令行界面 | ✅ | ✅ | ✅ | ✅ |
-| 交互式菜单 | ✅ | ❌ | ❌ | ❌ |
+| Open Source | ✅ | ✅ | ✅ | ✅ |
+| Cross-platform | ❌ (Windows) | ❌ (Windows) | ❌ (Windows) | ✅ |
+| Real-time Monitoring | ✅ | ❌ | ❌ | ❌ |
+| GitIgnore Integration | ✅ | ❌ | ❌ | ❌ |
+| Config File | ✅ JSON | ❌ | ❌ | ✅ |
+| Modular Design | ✅ | ❌ | ❌ | ❌ |
+| .NET Native | ✅ | ❌ | ❌ | ❌ |
+| CLI Interface | ✅ | ✅ | ✅ | ✅ |
+| Interactive Menu | ✅ | ❌ | ❌ | ❌ |
 
 ---
 
-## 环境要求
+## Requirements
 
-### 系统要求
+### System Requirements
 
-| 项目 | 最低要求 | 推荐配置 |
-|------|---------|---------|
-| 操作系统 | Windows 10 (1809+) | Windows 11 |
-| 运行时 | .NET 8.0 Runtime | .NET 8.0 SDK |
-| 内存 | 512 MB | 2 GB+ |
-| 磁盘空间 | 50 MB | 100 MB+ |
+| Item | Minimum | Recommended |
+|------|---------|-------------|
+| OS | Windows 10 (1809+) | Windows 11 |
+| Runtime | .NET 8.0 Runtime | .NET 8.0 SDK |
+| Memory | 512 MB | 2 GB+ |
+| Disk Space | 50 MB | 100 MB+ |
 
-### 软件依赖
+### Dependencies
 
-#### 运行时依赖
-
-- **.NET 8.0 Runtime** - [下载地址](https://dotnet.microsoft.com/download/dotnet/8.0)
-
-#### 开发依赖（仅开发时需要）
-
-- **.NET 8.0 SDK** - 包含编译器和开发工具
-- **Visual Studio 2022** (17.8+) 或 **VS Code** - 推荐IDE
-- **Git** - 版本控制
-
-### 版本兼容性
-
-```
-.NET 8.0  ──────────────────────────────────────▶
-          │
-          ├── Synchron 1.0.x (当前版本)
-          │
-          └── 支持所有 .NET 8.0 兼容平台
-```
+- **.NET 8.0 Runtime** - [Download](https://dotnet.microsoft.com/download/dotnet/8.0)
 
 ---
 
-## 安装步骤
+## Installation
 
-### 方式一：下载预编译版本
+### Option 1: Install from NuGet (Recommended)
 
 ```powershell
-# 1. 从 Releases 页面下载最新版本
-# https://github.com/your-repo/synchron/releases
+# Install as global tool
+dotnet tool install --global Synchron
 
-# 2. 解压到目标目录
-Expand-Archive -Path synchron-v1.0.0.zip -DestinationPath C:\Tools\Synchron
+# Usage
+synchron --help
+synchron --version
+```
 
-# 3. 添加到系统 PATH（可选）
+### Option 2: Download Pre-built Binary
+
+```powershell
+# 1. Download from Releases page
+# https://github.com/hope-phenom/synchron/releases
+
+# 2. Extract to target directory
+Expand-Archive -Path synchron-v1.2.2.zip -DestinationPath C:\Tools\Synchron
+
+# 3. Add to system PATH (optional)
 $env:PATH += ";C:\Tools\Synchron"
 
-# 4. 验证安装
+# 4. Verify installation
 .\Synchron.exe --version
 ```
 
-### 方式二：从源码编译
+### Option 3: Build from Source
 
 ```powershell
-# 1. 克隆仓库
-git clone https://github.com/your-repo/synchron.git
+# 1. Clone repository
+git clone https://github.com/hope-phenom/synchron.git
 cd synchron
 
-# 2. 还原依赖
+# 2. Restore dependencies
 dotnet restore
 
-# 3. 编译项目
+# 3. Build project
 dotnet build --configuration Release
 
-# 4. 运行测试
+# 4. Run tests
 dotnet test
 
-# 5. 发布 AOT 版本（可选）
-dotnet publish src/Synchron.Console -c Release -r win-x64 --self-contained
-
-# 编译产物位置
-# src/Synchron.Console/bin/Release/net8.0/win-x64/publish/Synchron.exe
-```
-
-### 方式三：全局安装（开发模式）
-
-```powershell
-# 安装为全局工具
-dotnet pack src/Synchron.Core -c Release
+# 5. Pack as global tool
+dotnet pack src/Synchron.Console/Synchron.Console.csproj -c Release -o nupkg
 dotnet tool install --global --add-source ./nupkg Synchron
-
-# 使用
-synchron --help
-```
-
-### 配置文件位置
-
-```
-Windows:
-├── %APPDATA%\Synchron\
-│   └── synchron.json          # 默认配置文件
-│
-└── %LOCALAPPDATA%\Synchron\
-    └── logs\                  # 日志文件目录
 ```
 
 ---
 
-## 使用方法
+## Usage
 
-### 快速开始
+### Quick Start
 
 ```bash
-# 显示帮助信息
-Synchron --help
+# Show help
+synchron --help
 
-# 显示版本
-Synchron --version
+# Show version
+synchron --version
 
-# 基本同步
-Synchron C:\Source D:\Backup
+# Basic sync
+synchron C:\Source D:\Backup
 
-# 预览模式（不实际执行）
-Synchron C:\Source D:\Backup --dry-run
+# Preview mode (dry run)
+synchron C:\Source D:\Backup --dry-run
 ```
 
-### 命令行参数
+### Command Line Options
 
 ```
 Usage:
-  Synchron <source> <target> [options]    单次同步操作
-  Synchron task <tasks.json> [options]    执行任务列表
-  Synchron task-init                      创建示例任务列表
+  synchron <source> <target> [options]    Single sync operation
+  synchron task <tasks.json> [options]    Execute task list
+  synchron task-init                      Create sample task list
 
-参数:
-  <source>       源目录路径
-  <target>       目标目录路径
+Arguments:
+  <source>       Source directory path
+  <target>       Target directory path
 
-选项:
-  -m, --mode <mode>       同步模式: diff, sync, move, mirror (默认: diff)
-  -f, --filter <pattern>  包含文件模式 (如: *.txt, **/*.cs)
-  -e, --exclude <pattern> 排除文件模式
-  -w, --watch             启用实时监控模式
-  -l, --log <level>       日志级别: debug, info, warn, error (默认: info)
-  -c, --config <file>     配置文件路径
-      --dry-run           预览模式，不实际执行
-      --verify            使用哈希校验文件
-      --verbose           详细输出
-      --no-subdirs        不包含子目录
-      --conflict <mode>   冲突处理: overwrite, newer, skip, rename
-      --buffer <size>     缓冲区大小(字节) (默认: 1MB)
-      --logfile <path>    日志文件路径
-  -v, --version           显示版本信息
-  -h, --help              显示帮助信息
+Options:
+  -m, --mode <mode>       Sync mode: diff, sync, move, mirror (default: diff)
+  -f, --filter <pattern>  Include file pattern (e.g., *.txt, **/*.cs)
+  -e, --exclude <pattern> Exclude file pattern
+  -w, --watch             Enable real-time monitoring mode
+  -l, --log <level>       Log level: debug, info, warn, error (default: info)
+  -c, --config <file>     Configuration file path
+      --dry-run           Preview mode, no actual execution
+      --verify            Use hash verification
+      --verbose           Verbose output
+      --no-subdirs        Exclude subdirectories
+      --conflict <mode>   Conflict resolution: overwrite, newer, skip, rename
+      --buffer <size>     Buffer size in bytes (default: 1MB)
+      --logfile <path>    Log file path
+  -v, --version           Show version
+  -h, --help              Show help
 
-GitIgnore 选项:
-      --no-gitignore      禁用 GitIgnore 自动检测
-      --gitignore <file>  使用外部 .gitignore 文件
-      --force-gitignore   强制使用指定的 GitIgnore (跳过自动检测)
+GitIgnore Options:
+      --no-gitignore      Disable GitIgnore auto-detection
+      --gitignore <file>  Use external .gitignore file
+      --force-gitignore   Force use specified GitIgnore (skip auto-detection)
 
-任务列表选项:
-  Synchron task <tasks.json>              执行所有启用的任务
-  Synchron task <tasks.json> --list       列出所有任务
-  Synchron task <tasks.json> -t <name>    执行指定任务
-  Synchron task <tasks.json> --dry-run    预览所有任务
-  Synchron task-init                      创建示例任务列表文件
+Task List Options:
+  synchron task <tasks.json>              Execute all enabled tasks
+  synchron task <tasks.json> --list       List all tasks
+  synchron task <tasks.json> -t <name>    Execute specific task
+  synchron task <tasks.json> --dry-run    Preview all tasks
+  synchron task-init                      Create sample task list file
 ```
 
-### 同步模式详解
+### Sync Modes
 
-#### 1. Diff 模式（增量同步）
+#### 1. Diff Mode (Incremental Sync)
 
-仅复制新增和已更改的文件，保留目标目录中的其他文件。
+Only copies new and changed files, preserving other files in target directory.
 
 ```bash
-Synchron C:\Projects D:\Backup -m diff
+synchron C:\Projects D:\Backup -m diff
 ```
 
 ```
-源目录:          目标目录:
-├── file1.txt    ├── file1.txt (已存在，跳过)
-├── file2.txt    ├── file2.txt (已存在，跳过)
-└── file3.txt    └── old.txt   (保留)
-                 ↓ 同步后
-                 ├── file1.txt
-                 ├── file2.txt
-                 ├── file3.txt (新增)
-                 └── old.txt   (保留)
+Source:           Target:
++-- file1.txt     +-- file1.txt (exists, skipped)
++-- file2.txt     +-- file2.txt (exists, skipped)
++-- file3.txt     +-- old.txt   (preserved)
+                  | After sync
+                  +-- file1.txt
+                  +-- file2.txt
+                  +-- file3.txt (new)
+                  +-- old.txt   (preserved)
 ```
 
-#### 2. Sync 模式（标准同步）
+#### 2. Sync Mode (Standard Sync)
 
-与 Diff 类似，但会更新所有源目录中存在的文件。
+Similar to Diff, but updates all files that exist in source.
 
 ```bash
-Synchron C:\Projects D:\Backup -m sync
+synchron C:\Projects D:\Backup -m sync
 ```
 
-#### 3. Move 模式（移动）
+#### 3. Move Mode
 
-将文件从源目录移动到目标目录，源文件会被删除。
+Moves files from source to target, source files are deleted.
 
 ```bash
-Synchron C:\Temp\Inbox C:\Archive -m move
+synchron C:\Temp\Inbox C:\Archive -m move
 ```
 
-#### 4. Mirror 模式（镜像）
+#### 4. Mirror Mode
 
-使目标目录完全镜像源目录，删除目标目录中多余的文件。
+Makes target directory exactly mirror source, deleting extra files in target.
 
 ```bash
-Synchron C:\Source D:\Mirror -m mirror
+synchron C:\Source D:\Mirror -m mirror
 ```
 
-```
-源目录:          目标目录:
-├── file1.txt    ├── file1.txt
-└── file2.txt    ├── file2.txt
-                 └── extra.txt (将被删除)
-                 ↓ 同步后
-                 ├── file1.txt
-                 └── file2.txt
-```
+### GitIgnore Integration
 
-### 文件过滤
-
-#### 通配符过滤
+Synchron has built-in GitIgnore support, automatically detecting Git repositories and applying `.gitignore` rules.
 
 ```bash
-# 仅同步文本文件
-Synchron C:\Source D:\Backup -f "*.txt"
+# Default: auto-detect and apply .gitignore rules
+synchron C:\MyProject D:\Backup
 
-# 同步所有代码文件
-Synchron C:\Source D:\Backup -f "*.cs" -f "*.js" -f "*.py"
+# Disable GitIgnore auto-detection
+synchron C:\Source D:\Backup --no-gitignore
 
-# 排除临时文件
-Synchron C:\Source D:\Backup -e "*.tmp" -e "*.log" -e "*.bak"
-
-# 组合使用
-Synchron C:\Source D:\Backup -f "*.txt" -e "*_test.txt"
+# Use external .gitignore file
+synchron C:\Source D:\Backup --gitignore C:\rules\.gitignore
 ```
 
-#### 过滤模式语法
+### Task List Feature
 
-| 模式 | 说明 | 示例 |
-|------|------|------|
-| `*` | 匹配任意字符（不含路径分隔符） | `*.txt` |
-| `**` | 匹配任意字符（含路径分隔符） | `**/*.cs` |
-| `?` | 匹配单个字符 | `file?.txt` |
-
-### GitIgnore 集成
-
-Synchron 内置 GitIgnore 支持，可自动检测 Git 仓库并应用 `.gitignore` 规则进行文件过滤。
-
-#### 自动检测机制
-
-```
-源目录扫描流程:
-┌─────────────────────────────────────────────────────────────┐
-│  1. 向上扫描目录树，检测 .git 目录                           │
-│  2. 检测同目录及父目录中的 .gitignore 文件                   │
-│  3. 解析 .gitignore 规则并缓存                               │
-│  4. 应用规则过滤同步文件                                     │
-└─────────────────────────────────────────────────────────────┘
-```
-
-#### GitIgnore 命令行选项
+Execute multiple sync tasks in batch via task list configuration.
 
 ```bash
-# 默认行为：自动检测并应用 .gitignore 规则
-Synchron C:\MyProject D:\Backup
+# Create sample task list config file
+synchron task-init
 
-# 禁用 GitIgnore 自动检测
-Synchron C:\Source D:\Backup --no-gitignore
+# Execute all enabled tasks
+synchron task tasks.json
 
-# 使用外部 .gitignore 文件
-Synchron C:\Source D:\Backup --gitignore C:\rules\.gitignore
+# List all tasks
+synchron task tasks.json --list
 
-# 强制使用指定的 GitIgnore（跳过自动检测）
-Synchron C:\Source D:\Backup --gitignore .\my-rules.txt --force-gitignore
+# Execute specific task
+synchron task tasks.json -t "Documents Backup"
+
+# Preview mode
+synchron task tasks.json --dry-run
 ```
 
-#### 配置文件中的 GitIgnore 设置
-
-```json
-{
-  "sourcePath": "C:\\Projects",
-  "targetPath": "D:\\Backup",
-  "gitIgnore": {
-    "enabled": true,
-    "autoDetect": true,
-    "externalGitIgnorePath": null,
-    "overrideAutoDetect": false
-  }
-}
-```
-
-#### GitIgnore 配置选项
-
-| 选项 | 类型 | 默认值 | 说明 |
-|------|------|--------|------|
-| `enabled` | bool | `true` | 是否启用 GitIgnore 过滤 |
-| `autoDetect` | bool | `true` | 是否自动检测 Git 环境 |
-| `externalGitIgnorePath` | string | `null` | 外部 .gitignore 文件路径 |
-| `overrideAutoDetect` | bool | `false` | 是否覆盖自动检测 |
-
-#### 支持的 GitIgnore 语法
-
-Synchron 支持标准 `.gitignore` 语法：
-
-| 语法 | 说明 | 示例 |
-|------|------|------|
-| `*` | 匹配任意字符（不含 `/`） | `*.log` |
-| `**` | 匹配任意目录 | `**/temp/` |
-| `?` | 匹配单个字符 | `file?.txt` |
-| `[]` | 匹配字符范围 | `[abc].txt` |
-| `!` | 否定模式 | `!important.log` |
-| `/` | 目录分隔符 | `build/` |
-| `#` | 注释 | `# This is a comment` |
-
-#### GitIgnore 示例
-
-```gitignore
-# Build outputs
-bin/
-obj/
-*.dll
-*.exe
-
-# IDE settings
-.vs/
-.idea/
-*.user
-*.suo
-
-# Logs
-*.log
-logs/
-
-# Exceptions (negation)
-!important.dll
-!important.log
-```
-
-#### 配置优先级
-
-```
-优先级（从高到低）:
-1. 命令行参数 (--no-gitignore, --gitignore, --force-gitignore)
-2. 配置文件 (synchron.json 中的 gitIgnore 配置)
-3. 自动检测的 Git 环境
-4. 默认行为
-```
-
-#### 注意事项
-
-- GitIgnore 规则会被缓存以提高性能
-- 修改 `.gitignore` 文件后，缓存会自动更新
-- 外部 GitIgnore 文件支持相对路径和绝对路径
-- 使用 `--force-gitignore` 时会跳过自动检测，仅使用指定文件
-
-### 实时监控模式
-
-### 任务列表功能
-
-Synchron 支持通过任务列表配置文件批量执行多个同步任务，适用于需要定期同步多个目录的场景。
-
-#### 创建任务列表
-
-```bash
-# 创建示例任务列表配置文件
-Synchron task-init
-```
-
-这将创建一个 `tasks.json` 示例文件：
+#### Task List Example
 
 ```json
 {
@@ -489,173 +295,24 @@ Synchron task-init
           "autoDetect": true
         }
       }
-    },
-    {
-      "name": "Photos Backup",
-      "description": "Mirror photos to external drive",
-      "enabled": true,
-      "options": {
-        "sourcePath": "D:\\Photos",
-        "targetPath": "E:\\Photos",
-        "mode": "Mirror",
-        "includeSubdirectories": true
-      }
     }
   ]
 }
 ```
 
-#### 执行任务列表
+### Real-time Monitoring Mode
 
 ```bash
-# 执行所有启用的任务
-Synchron task tasks.json
+# Start monitoring mode
+synchron C:\Source D:\Backup -w
 
-# 列出所有任务
-Synchron task tasks.json --list
-
-# 执行特定任务
-Synchron task tasks.json -t "Documents Backup"
-
-# 预览模式（不实际执行）
-Synchron task tasks.json --dry-run
-
-# 详细日志
-Synchron task tasks.json --verbose
+# Monitoring with verbose logging
+synchron C:\Source D:\Backup -w -l debug
 ```
 
-#### 任务列表命令行选项
+### Configuration File
 
-```
-Synchron task <tasks.json> [options]
-
-选项:
-      --list               列出配置文件中的所有任务
-  -t, --task <name>        执行指定名称的任务
-      --dry-run            预览模式，不实际执行
-  -l, --log <level>        日志级别: debug, info, warn, error
-      --verbose            详细输出
-      --logfile <path>     日志文件路径
-  -h, --help               显示帮助信息
-```
-
-#### 任务列表配置选项
-
-| 选项 | 类型 | 默认值 | 说明 |
-|------|------|--------|------|
-| `name` | string | `null` | 任务列表名称 |
-| `stopOnError` | bool | `true` | 遇到错误时是否停止后续任务 |
-| `maxParallelTasks` | int | `1` | 最大并行任务数（1=串行） |
-| `tasks` | array | `[]` | 任务列表 |
-
-#### 任务配置选项
-
-| 选项 | 类型 | 默认值 | 说明 |
-|------|------|--------|------|
-| `name` | string | 必填 | 任务名称 |
-| `description` | string | `null` | 任务描述 |
-| `enabled` | bool | `true` | 是否启用 |
-| `options` | object | 必填 | 同步选项（同 SyncOptions） |
-
-#### 执行结果示例
-
-```
-═══════════════════════════════════════════════════════════
-                    Task List Execution                    
-═══════════════════════════════════════════════════════════
-
-[1] Documents Backup... ✓
-      ✓ Success - 156 copied, 0 moved, 0 deleted
-      23.45 MB, 2.34s
-
-[2] Photos Backup... ✓
-      ✓ Success - 89 copied, 0 moved, 0 deleted
-      1.23 GB, 15.67s
-
-═══════════════════════════════════════════════════════════
-                         Summary                           
-═══════════════════════════════════════════════════════════
-  Total Tasks:     2
-  Completed:       2
-  Failed:          0
-  Skipped:         0
-  Total Duration:  18.01s
-  Total Data:      1.25 GB
-═══════════════════════════════════════════════════════════
-```
-
-#### 使用场景
-
-**场景一：日常备份脚本**
-
-创建 `daily-backup.json`：
-```json
-{
-  "name": "Daily Backup",
-  "stopOnError": false,
-  "tasks": [
-    {
-      "name": "Documents",
-      "enabled": true,
-      "options": {
-        "sourcePath": "C:\\Users\\User\\Documents",
-        "targetPath": "\\\\NAS\\Backup\\Documents",
-        "mode": "Sync"
-      }
-    },
-    {
-      "name": "Photos",
-      "enabled": true,
-      "options": {
-        "sourcePath": "D:\\Photos",
-        "targetPath": "\\\\NAS\\Backup\\Photos",
-        "mode": "Mirror"
-      }
-    }
-  ]
-}
-```
-
-通过 Windows 任务计划程序定时执行：
-```batch
-Synchron task daily-backup.json --logfile C:\Logs\backup.log
-```
-
-**场景二：选择性执行**
-
-```bash
-# 仅执行文档备份
-Synchron task tasks.json -t "Documents"
-
-# 先预览再执行
-Synchron task tasks.json --dry-run
-Synchron task tasks.json
-```
-
-### 实时监控模式
-
-```bash
-# 启动监控模式
-Synchron C:\Source D:\Backup -w
-
-# 监控模式 + 详细日志
-Synchron C:\Source D:\Backup -w -l debug
-
-# 监控模式 + 过滤
-Synchron C:\Source D:\Backup -w -f "*.txt"
-```
-
-监控模式下，Synchron 会持续监视源目录的变化，并在检测到文件变化时自动同步：
-
-```
-[2026-02-12 10:00:00] [INFO] File watcher started on: C:\Source
-[2026-02-12 10:00:05] [INFO] File changed: newfile.txt (Created)
-[2026-02-12 10:00:05] [INFO] Auto-sync completed: 1 copied, 0 deleted
-```
-
-### 配置文件
-
-创建 `synchron.json` 配置文件：
+Create `synchron.json` configuration file:
 
 ```json
 {
@@ -665,45 +322,31 @@ Synchron C:\Source D:\Backup -w -f "*.txt"
   "includeSubdirectories": true,
   "includePatterns": ["*.cs", "*.js", "*.json"],
   "excludePatterns": ["bin/*", "obj/*", "*.tmp"],
-  "compareMethod": "TimestampAndSize",
-  "conflictResolution": "OverwriteIfNewer",
-  "bufferSize": 1048576,
-  "maxRetries": 3,
-  "retryDelayMs": 1000,
-  "logLevel": "Info",
-  "preserveTimestamps": true,
-  "preserveAttributes": true,
-  "watchDebounceMs": 500,
   "gitIgnore": {
     "enabled": true,
-    "autoDetect": true,
-    "externalGitIgnorePath": null,
-    "overrideAutoDetect": false
+    "autoDetect": true
   }
 }
 ```
 
-使用配置文件：
+Use configuration file:
 
 ```bash
-Synchron -c synchron.json
-
-# 配置文件 + 命令行参数覆盖
-Synchron -c synchron.json -m mirror --dry-run
+synchron -c synchron.json
 ```
 
-### 交互式菜单
+### Interactive Menu
 
-不带参数运行 Synchron 将进入交互式菜单：
+Run Synchron without arguments to enter interactive menu:
 
 ```bash
-Synchron
+synchron
 ```
 
 ```
-═══════════════════════════════════════════
+===========================================
          Synchron - File Sync Tool         
-═══════════════════════════════════════════
+===========================================
 
   Source: (not set)
   Target: (not set)
@@ -721,231 +364,72 @@ Synchron
   Select option: _
 ```
 
-### 使用示例
-
-#### 场景一：项目代码备份
-
-```bash
-# 备份项目，排除编译产物
-Synchron C:\MyProject D:\Backups\MyProject `
-  -e "bin/*" -e "obj/*" -e ".vs/*" `
-  -e "*.user" -e "*.suo"
-
-# 使用配置文件
-Synchron -c project-backup.json
-```
-
-#### 场景二：日志文件归档
-
-```bash
-# 移动30天前的日志到归档目录
-Synchron C:\Logs D:\Archive\Logs -m move -f "*.log"
-```
-
-#### 场景三：实时同步开发目录
-
-```bash
-# 实时同步到网络共享
-Synchron C:\DevProjects \\NAS\DevBackup -w -l debug --logfile sync.log
-```
-
-#### 场景四：镜像网站目录
-
-```bash
-# 完整镜像网站目录
-Synchron C:\Website\Staging D:\Website\Production -m mirror --verify
-```
-
 ---
 
-## 开发指南
+## Development Guide
 
-### 项目结构
+### Project Structure
 
 ```
 Synchron/
-├── src/
-│   ├── Synchron.Core/                 # 核心类库
-│   │   ├── Interfaces/                # 接口定义
-│   │   │   ├── ILogger.cs             #   日志接口
-│   │   │   ├── ISyncEngine.cs         #   同步引擎接口
-│   │   │   ├── IFileWatcher.cs        #   文件监控接口
-│   │   │   ├── IConfigManager.cs      #   配置管理接口
-│   │   │   └── ITaskListExecutor.cs   #   任务列表执行器接口
-│   │   ├── Models/                    # 数据模型
-│   │   │   ├── SyncOptions.cs         #   同步选项
-│   │   │   ├── SyncResult.cs          #   同步结果
-│   │   │   ├── SyncTask.cs            #   同步任务
-│   │   │   ├── TaskListConfig.cs      #   任务列表配置
-│   │   │   └── FileItem.cs            #   文件项
-│   │   ├── GitSupport/                # GitIgnore 支持
-│   │   │   ├── GitIgnoreParser.cs     #   GitIgnore 解析器
-│   │   │   ├── GitEnvironmentDetector.cs  # Git 环境检测
-│   │   │   ├── GitIgnoreRuleCache.cs  #   规则缓存
-│   │   │   └── GitIgnoreRule.cs       #   规则模型
-│   │   ├── Logger.cs                  # 日志实现
-│   │   ├── ConfigManager.cs           # 配置管理
-│   │   ├── FileFilter.cs              # 文件过滤
-│   │   ├── SyncEngine.cs              # 同步引擎
-│   │   ├── FileWatcher.cs             # 文件监控
-│   │   ├── TaskListExecutor.cs        # 任务列表执行器
-│   │   ├── TaskListManager.cs         # 任务列表管理器
-│   │   └── Synchron.Core.csproj
-│   │
-│   └── Synchron.Console/              # 控制台应用
-│       ├── Program.cs                 # 主入口
-│       ├── CommandLineParser.cs       # 命令行解析
-│       ├── CommandLineOptions.cs      # 命令行选项
-│       ├── InteractiveMenu.cs         # 交互菜单
-│       └── Synchron.Console.csproj
-│
-├── tests/
-│   └── Synchron.Core.Tests/           # 单元测试
-│       ├── LoggerTests.cs
-│       ├── FileFilterTests.cs
-│       ├── ConfigManagerTests.cs
-│       ├── SyncEngineTests.cs
-│       ├── GitIgnoreParserTests.cs
-│       ├── GitEnvironmentDetectorTests.cs
-│       ├── GitIgnoreRuleCacheTests.cs
-│       ├── FileFilterGitIntegrationTests.cs
-│       ├── TaskListExecutorTests.cs
-│       ├── TaskListManagerTests.cs
-│       └── Synchron.Core.Tests.csproj
-│
-├── Synchron.slnx                      # 解决方案文件
-└── README.md
++-- src/
+|   +-- Synchron.Core/                 # Core library
+|   |   +-- Interfaces/                # Interface definitions
+|   |   +-- Models/                    # Data models
+|   |   +-- GitSupport/                # GitIgnore support
+|   |   +-- Logger.cs                  # Logger implementation
+|   |   +-- SyncEngine.cs              # Sync engine
+|   |   +-- TaskListExecutor.cs        # Task list executor
+|   |   +-- TaskListManager.cs         # Task list manager
+|   |
+|   +-- Synchron.Console/              # Console application
+|       +-- Program.cs                 # Main entry
+|       +-- CommandLineParser.cs       # Command line parser
+|       +-- InteractiveMenu.cs         # Interactive menu
+|
++-- tests/
+|   +-- Synchron.Core.Tests/           # Unit tests
+|
++-- Synchron.slnx                      # Solution file
++-- README.md                          # English documentation
++-- README_CN.md                       # Chinese documentation
 ```
 
-### 核心模块说明
-
-#### SyncEngine（同步引擎）
-
-```csharp
-public interface ISyncEngine
-{
-    Task<SyncResult> SyncAsync(SyncOptions options, CancellationToken cancellationToken = default);
-    Task<SyncPreview> PreviewAsync(SyncOptions options, CancellationToken cancellationToken = default);
-    event EventHandler<SyncProgressEventArgs>? ProgressChanged;
-}
-```
-
-#### FileWatcher（文件监控）
-
-```csharp
-public interface IFileWatcher
-{
-    void Start();
-    void Stop();
-    bool IsRunning { get; }
-    string WatchPath { get; }
-    event EventHandler<FileChangedEventArgs>? FileChanged;
-}
-```
-
-### 编码规范
-
-#### 命名约定
-
-```csharp
-// 接口：I + PascalCase
-public interface ILogger { }
-public interface ISyncEngine { }
-
-// 类：PascalCase
-public class SyncEngine { }
-public class FileFilter { }
-
-// 方法：PascalCase
-public void StartWatch() { }
-public async Task<SyncResult> SyncAsync() { }
-
-// 参数：camelCase
-public void CopyFile(string sourcePath, string targetPath) { }
-
-// 私有字段：_ + camelCase
-private readonly ILogger _logger;
-private readonly object _lock = new();
-```
-
-#### 异步编程
-
-```csharp
-// 使用 async/await
-public async Task<SyncResult> SyncAsync(SyncOptions options, CancellationToken ct = default)
-{
-    await Task.Run(() => { /* ... */ }, ct);
-    return result;
-}
-
-// 使用 ValueTask 优化高频调用
-public ValueTask<bool> FileExistsAsync(string path)
-{
-    return File.Exists(path) 
-        ? new ValueTask<bool>(true) 
-        : new ValueTask<bool>(CheckExistsAsync(path));
-}
-```
-
-### 开发环境搭建
+### Development Setup
 
 ```powershell
-# 1. 安装 .NET SDK
+# 1. Install .NET SDK
 winget install Microsoft.DotNet.SDK.8
 
-# 2. 安装 VS Code 扩展
-code --install-extension ms-dotnettools.csharp
-code --install-extension ms-dotnettools.vscode-dotnet-runtime
-
-# 3. 克隆项目
-git clone https://github.com/your-repo/synchron.git
+# 2. Clone project
+git clone https://github.com/hope-phenom/synchron.git
 cd synchron
 
-# 4. 还原依赖
+# 3. Restore dependencies
 dotnet restore
 
-# 5. 构建项目
+# 4. Build project
 dotnet build
 
-# 6. 运行测试
+# 5. Run tests
 dotnet test --verbosity normal
 
-# 7. 运行应用
+# 6. Run application
 dotnet run --project src/Synchron.Console
 ```
 
-### 提交代码流程
-
-```bash
-# 1. 创建功能分支
-git checkout -b feature/your-feature-name
-
-# 2. 进行修改并测试
-dotnet build
-dotnet test
-
-# 3. 提交更改
-git add .
-git commit -m "feat: add your feature description"
-
-# 4. 推送分支
-git push origin feature/your-feature-name
-
-# 5. 创建 Pull Request
-```
-
-#### 提交信息规范
+### Commit Message Convention
 
 ```
-feat: 新功能
-fix: 修复 bug
-docs: 文档更新
-style: 代码格式调整
-refactor: 重构
-test: 测试相关
-chore: 构建/工具相关
+feat: New feature
+fix: Bug fix
+docs: Documentation update
+style: Code formatting
+refactor: Code refactoring
+test: Test related
+chore: Build/tool related
 
-示例:
+Examples:
 feat: add hash verification for file comparison
 fix: handle file lock exception during sync
 docs: update installation guide
@@ -953,284 +437,95 @@ docs: update installation guide
 
 ---
 
-## 维护指南
+## Troubleshooting
 
-### 常见问题排查
-
-#### 问题 1：文件被占用无法同步
+### Issue 1: File Locked
 
 ```
-错误信息: The process cannot access the file because it is being used by another process.
+Error: The process cannot access the file because it is being used by another process.
 ```
 
-**解决方案：**
-1. 关闭占用文件的程序
-2. 使用 `--buffer` 参数调整缓冲区大小
-3. 检查杀毒软件是否锁定文件
+**Solutions:**
+1. Close the program using the file
+2. Adjust buffer size with `--buffer` parameter
+3. Check if antivirus is locking the file
 
-#### 问题 2：权限不足
-
-```
-错误信息: Access to the path 'xxx' is denied.
-```
-
-**解决方案：**
-1. 以管理员身份运行
-2. 检查文件夹权限设置
-3. 确认目标目录可写
-
-#### 问题 3：路径过长
+### Issue 2: Access Denied
 
 ```
-错误信息: The specified path, file name, or both are too long.
+Error: Access to the path 'xxx' is denied.
 ```
 
-**解决方案：**
-1. 启用 Windows 长路径支持：
+**Solutions:**
+1. Run as administrator
+2. Check folder permissions
+3. Ensure target directory is writable
+
+### Issue 3: Path Too Long
+
+```
+Error: The specified path, file name, or both are too long.
+```
+
+**Solution:** Enable Windows long path support:
 ```powershell
-# 注册表设置
 New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" `
   -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
 ```
 
-#### 问题 4：监控模式丢失事件
-
-**解决方案：**
-1. 增加 `watchDebounceMs` 值
-2. 减少监控目录的文件数量
-3. 使用多个监控实例分担负载
-
-### 日志查看
-
-#### 控制台日志
+### Performance Tips
 
 ```bash
-# 详细日志
-Synchron C:\Source D:\Backup -l debug
-
-# 仅错误日志
-Synchron C:\Source D:\Backup -l error
-```
-
-#### 文件日志
-
-```bash
-# 输出到文件
-Synchron C:\Source D:\Backup --logfile sync.log -l debug
-```
-
-#### 日志格式
-
-```
-[2026-02-12 15:30:45.123] [   INFO] Starting sync: C:\Source -> D:\Backup
-[2026-02-12 15:30:45.234] [  DEBUG] Scanning source directory...
-[2026-02-12 15:30:45.345] [  DEBUG] Found 150 files to process
-[2026-02-12 15:30:46.456] [   INFO] Sync completed: 10 copied, 140 skipped
-[2026-02-12 15:30:47.567] [WARNING] File locked, retrying: data.db
-[2026-02-12 15:30:48.678] [  ERROR] Failed to copy: permission denied
-```
-
-### 性能优化建议
-
-#### 1. 缓冲区优化
-
-```bash
-# 小文件：减小缓冲区
+# Small files: reduce buffer size
 --buffer 65536
 
-# 大文件：增大缓冲区
+# Large files: increase buffer size
 --buffer 4194304
-```
 
-#### 2. 并行处理
-
-```csharp
-// 在 SyncOptions 中配置
-options.MaxDegreeOfParallelism = Environment.ProcessorCount;
-```
-
-#### 3. 过滤优化
-
-```bash
-# 使用精确的过滤规则减少扫描范围
+# Use precise filter rules to reduce scan scope
 -f "*.cs" -e "bin/*" -e "obj/*"
 ```
 
-### 版本更新策略
+---
 
-```
-版本号格式: MAJOR.MINOR.PATCH
+## Contributing
 
-MAJOR: 不兼容的 API 变更
-MINOR: 向后兼容的功能新增
-PATCH: 向后兼容的问题修复
+We welcome all forms of contribution!
 
-示例:
-1.0.0 -> 1.0.1 (修复 bug)
-1.0.1 -> 1.1.0 (新增功能)
-1.1.0 -> 2.0.0 (重大变更)
-```
+### Ways to Contribute
+
+1. **Report Issues** - Submit bug reports or feature requests
+2. **Submit Code** - Fix bugs or implement new features
+3. **Improve Documentation** - Improve docs or translations
+4. **Share Experience** - Share use cases and best practices
+
+### PR Checklist
+
+- [ ] Code passes all tests `dotnet test`
+- [ ] Code follows coding standards
+- [ ] Added necessary unit tests
+- [ ] Updated relevant documentation
+- [ ] Commit messages follow convention
 
 ---
 
-## 贡献说明
+## License
 
-### 参与贡献
-
-我们欢迎所有形式的贡献！
-
-#### 贡献方式
-
-1. **报告问题** - 提交 Bug 报告或功能建议
-2. **提交代码** - 修复 Bug 或实现新功能
-3. **完善文档** - 改进文档或翻译
-4. **分享经验** - 分享使用案例和最佳实践
-
-### 提交 Issue
-
-#### Bug 报告模板
-
-```markdown
-## Bug 描述
-简要描述遇到的问题
-
-## 复现步骤
-1. 执行命令 `Synchron ...`
-2. 观察到错误信息
-
-## 期望行为
-描述期望的正常行为
-
-## 实际行为
-描述实际的错误行为
-
-## 环境信息
-- OS: Windows 11
-- .NET Version: 8.0.100
-- Synchron Version: 1.0.0
-
-## 日志输出
-```
-粘贴相关日志
-```
-
-## 截图
-如有必要，添加截图
-```
-
-#### 功能建议模板
-
-```markdown
-## 功能描述
-描述你希望添加的功能
-
-## 使用场景
-描述该功能解决什么问题
-
-## 建议实现
-如有想法，描述可能的实现方式
-
-## 替代方案
-描述你考虑过的替代方案
-```
-
-### 提交 Pull Request
-
-#### PR 检查清单
-
-- [ ] 代码通过所有测试 `dotnet test`
-- [ ] 代码符合编码规范
-- [ ] 添加必要的单元测试
-- [ ] 更新相关文档
-- [ ] 提交信息符合规范
-
-#### PR 流程
-
-```
-1. Fork 项目
-2. 创建分支: git checkout -b feature/amazing-feature
-3. 提交更改: git commit -m 'feat: add amazing feature'
-4. 推送分支: git push origin feature/amazing-feature
-5. 创建 Pull Request
-6. 等待代码审查
-7. 合并到主分支
-```
-
-### 行为准则
-
-- 尊重所有贡献者
-- 接受建设性批评
-- 关注对社区最有利的事情
-- 对其他社区成员保持同理心
+This project is licensed under the [MIT License](LICENSE).
 
 ---
 
-## 许可证
+## Contact
 
-本项目采用 [MIT License](LICENSE) 开源协议。
-
----
-
-## 联系方式
-
-- **问题反馈**: [GitHub Issues](https://github.com/your-repo/synchron/issues)
-- **功能建议**: [GitHub Discussions](https://github.com/your-repo/synchron/discussions)
+- **Issues**: [GitHub Issues](https://github.com/hope-phenom/synchron/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/hope-phenom/synchron/discussions)
 
 ---
 
 <div align="center">
 
-**⭐ 如果这个项目对你有帮助，请给一个 Star！⭐**
+**If this project helps you, please give it a Star!**
 
-Made with ❤️ by Synchron Team
+Made with love by Synchron Team
 
 </div>
-
----
-
-## English
-
-### Overview
-
-**Synchron** is a high-performance file synchronization tool for Windows, featuring:
-
-- 🚀 High-speed async file operations
-- 🔄 Multiple sync modes (Diff, Sync, Move, Mirror)
-- 👀 Real-time directory monitoring
-- 🎯 Flexible file filtering
-- 📊 Progress reporting and statistics
-- ⚙️ JSON configuration support
-
-### Quick Start
-
-```bash
-# Build
-dotnet build
-
-# Run tests
-dotnet test
-
-# Basic sync
-Synchron C:\Source D:\Backup
-
-# Mirror mode with preview
-Synchron C:\Source D:\Backup -m mirror --dry-run
-
-# Watch mode
-Synchron C:\Source D:\Backup -w
-
-# Task list mode
-Synchron task-init                    # Create sample tasks.json
-Synchron task tasks.json              # Execute all tasks
-Synchron task tasks.json --list       # List all tasks
-Synchron task tasks.json -t "Backup"  # Execute specific task
-```
-
-### Requirements
-
-- Windows 10 (1809+) or Windows 11
-- .NET 8.0 Runtime
-
-### License
-
-MIT License - see [LICENSE](LICENSE) for details.
