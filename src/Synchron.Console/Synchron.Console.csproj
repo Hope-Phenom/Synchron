@@ -9,10 +9,30 @@
     <AssemblyName>Synchron</AssemblyName>
     <PublishAot>true</PublishAot>
     <InvariantGlobalization>true</InvariantGlobalization>
+    
+    <IsPackable>true</IsPackable>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>synchron</ToolCommandName>
+    <PackageOutputPath>..\..\nupkg</PackageOutputPath>
+    
+    <PackageId>Synchron</PackageId>
+    <PackageVersion>1.2.0</PackageVersion>
+    <Authors>Hope.Phenom</Authors>
+    <Description>A fast file synchronization tool with GitIgnore support and task list batch execution.</Description>
+    <PackageTags>sync;file;backup;gitignore;mirror;synchronization</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageProjectUrl>https://github.com/hope-phenom/synchron</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/hope-phenom/synchron</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Synchron.Core\Synchron.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
 </Project>
