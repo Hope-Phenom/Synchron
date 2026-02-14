@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.Json;
 using Synchron.Core.Interfaces;
 using Synchron.Core.Models;
@@ -22,7 +23,7 @@ public class TaskListManager
 
         try
         {
-            var json = File.ReadAllText(configPath);
+            var json = File.ReadAllText(configPath, Encoding.UTF8);
             var config = JsonSerializer.Deserialize<TaskListConfig>(json, new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true,
@@ -59,10 +60,11 @@ public class TaskListManager
             var json = JsonSerializer.Serialize(config, new JsonSerializerOptions
             {
                 WriteIndented = true,
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
             });
 
-            File.WriteAllText(configPath, json);
+            File.WriteAllText(configPath, json, Encoding.UTF8);
             _logger.Info($"Task list config saved to: {configPath}");
         }
         catch (Exception ex)
@@ -135,6 +137,7 @@ public class TaskListManager
         if (config.MaxParallelTasks < 1)
         {
             result.Warnings.Add("MaxParallelTasks should be at least 1, using default value 1");
+            config.MaxParallelTasks = 1;
         }
 
         return result;

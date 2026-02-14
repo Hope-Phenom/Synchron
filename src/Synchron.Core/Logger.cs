@@ -7,13 +7,13 @@ namespace Synchron.Core;
 public sealed class Logger : ILogger, IDisposable
 {
     private readonly object _lock = new();
-    private LogLevel _logLevel = LogLevel.Info;
+    private volatile LogLevel _logLevel = LogLevel.Info;
     private readonly string? _logFilePath;
     private readonly bool _consoleOutput;
     private readonly ConcurrentQueue<string> _logQueue = new();
     private readonly Task? _writeTask;
     private readonly CancellationTokenSource _cts = new();
-    private readonly bool _disposed = false;
+    private bool _disposed;
 
     public Logger(LogLevel level = LogLevel.Info, string? logFilePath = null, bool consoleOutput = true)
     {
@@ -108,8 +108,13 @@ public sealed class Logger : ILogger, IDisposable
             {
                 break;
             }
-            catch (Exception)
+            catch (IOException ex)
             {
+                Console.Error.WriteLine($"Logger: Failed to write to log file: {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Logger: Unexpected error: {ex.Message}");
             }
         }
 
@@ -120,13 +125,24 @@ public sealed class Logger : ILogger, IDisposable
         
         if (sb.Length > 0)
         {
-            await File.AppendAllTextAsync(_logFilePath!, sb.ToString());
+            try
+            {
+                await File.AppendAllTextAsync(_logFilePath!, sb.ToString());
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Logger: Failed to flush remaining logs: {ex.Message}");
+            }
         }
     }
 
     public void Dispose()
     {
-        if (_disposed) return;
+        lock (_lock)
+        {
+            if (_disposed) return;
+            _disposed = true;
+        }
         
         _cts.Cancel();
         _writeTask?.Wait(TimeSpan.FromSeconds(5));

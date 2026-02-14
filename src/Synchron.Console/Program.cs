@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Synchron.Core;
 using Synchron.Core.Interfaces;
 using Synchron.Core.Models;
@@ -10,6 +11,7 @@ public static class Program
     private static SyncEngine? _syncEngine;
     private static ConfigManager? _configManager;
     private static FileFilter? _fileFilter;
+    private static CancellationTokenSource? _cancellationTokenSource;
 
     public static async Task<int> Main(string[] args)
     {
@@ -73,12 +75,13 @@ public static class Program
 
     private static async Task<int> RunTaskListMode(CommandLineOptions cmdOptions)
     {
-        var logLevel = cmdOptions.LogLevel ?? (cmdOptions.Verbose ? LogLevel.Debug : LogLevel.Info);
-        _logger = new Logger(logLevel, cmdOptions.LogFilePath);
+        using var logger = new Logger(
+            cmdOptions.LogLevel ?? (cmdOptions.Verbose ? LogLevel.Debug : LogLevel.Info),
+            cmdOptions.LogFilePath);
 
         if (cmdOptions.InitTaskList)
         {
-            return await CreateSampleTaskList();
+            return CreateSampleTaskList(logger);
         }
 
         if (string.IsNullOrEmpty(cmdOptions.TaskListPath))
@@ -89,7 +92,7 @@ public static class Program
         }
 
         var taskListPath = Path.GetFullPath(cmdOptions.TaskListPath);
-        var taskListManager = new TaskListManager(_logger);
+        var taskListManager = new TaskListManager(logger);
 
         TaskListConfig config;
         try
@@ -98,12 +101,12 @@ public static class Program
         }
         catch (FileNotFoundException ex)
         {
-            _logger.Error(ex.Message);
+            logger.Error(ex.Message);
             return 1;
         }
         catch (InvalidOperationException ex)
         {
-            _logger.Error($"Failed to parse task list config: {ex.Message}");
+            logger.Error($"Failed to parse task list config: {ex.Message}");
             return 1;
         }
 
@@ -120,63 +123,79 @@ public static class Program
         var validation = taskListManager.Validate(config);
         if (!validation.IsValid)
         {
-            _logger.Error("Task list validation failed:");
+            logger.Error("Task list validation failed:");
             foreach (var error in validation.Errors)
             {
-                _logger.Error($"  - {error}");
+                logger.Error($"  - {error}");
             }
             return 1;
         }
 
         if (validation.Warnings.Count > 0)
         {
-            _logger.Warning("Task list validation warnings:");
+            logger.Warning("Task list validation warnings:");
             foreach (var warning in validation.Warnings)
             {
-                _logger.Warning($"  - {warning}");
+                logger.Warning($"  - {warning}");
             }
         }
 
+        var executionConfig = CloneConfig(config);
+
         if (!string.IsNullOrEmpty(cmdOptions.TaskName))
         {
-            var task = config.Tasks.FirstOrDefault(t => 
+            var task = executionConfig.Tasks.FirstOrDefault(t => 
                 t.Name.Equals(cmdOptions.TaskName, StringComparison.OrdinalIgnoreCase));
             
             if (task == null)
             {
-                _logger.Error($"Task not found: {cmdOptions.TaskName}");
+                logger.Error($"Task not found: {cmdOptions.TaskName}");
                 return 1;
             }
 
             if (!task.Enabled)
             {
-                _logger.Warning($"Task '{task.Name}' is disabled. Use --list to see all tasks.");
+                logger.Warning($"Task '{task.Name}' is disabled. Use --list to see all tasks.");
                 return 0;
             }
 
-            config.Tasks = new List<SyncTask> { task };
-            config.StopOnError = true;
+            executionConfig.Tasks = new List<SyncTask> { task };
+            executionConfig.StopOnError = true;
         }
 
         if (cmdOptions.DryRun)
         {
-            foreach (var task in config.Tasks.Where(t => t.Enabled))
+            foreach (var task in executionConfig.Tasks.Where(t => t.Enabled))
             {
                 task.Options.DryRun = true;
             }
         }
 
-        using var executor = new TaskListExecutor(_logger);
-        var result = await executor.ExecuteAsync(config);
+        _cancellationTokenSource = new CancellationTokenSource();
+        System.Console.CancelKeyPress += (sender, e) =>
+        {
+            e.Cancel = true;
+            logger.Info("Cancellation requested, stopping tasks...");
+            _cancellationTokenSource.Cancel();
+        };
+
+        using var executor = new TaskListExecutor(logger);
+        var result = await executor.ExecuteAsync(executionConfig, _cancellationTokenSource.Token);
 
         PrintTaskListResult(result);
 
         return result.Success ? 0 : 1;
     }
 
-    private static async Task<int> CreateSampleTaskList()
+    private static TaskListConfig CloneConfig(TaskListConfig config)
     {
-        var taskListManager = new TaskListManager(_logger!);
+        var json = JsonSerializer.Serialize(config);
+        return JsonSerializer.Deserialize<TaskListConfig>(json) ?? new TaskListConfig();
+    }
+
+    private static int CreateSampleTaskList(ILogger logger)
+    {
+        var taskListManager = new TaskListManager(logger);
         var sampleConfig = taskListManager.CreateSampleConfig();
         
         var outputPath = Path.Combine(Directory.GetCurrentDirectory(), "tasks.json");

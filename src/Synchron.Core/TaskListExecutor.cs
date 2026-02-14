@@ -118,15 +118,15 @@ public sealed class TaskListExecutor : ITaskListExecutor, IDisposable
         TaskListResult result, 
         CancellationToken cancellationToken)
     {
-        var semaphore = new SemaphoreSlim(config.MaxParallelTasks);
+        using var semaphore = new SemaphoreSlim(config.MaxParallelTasks);
         var lockObj = new object();
         int taskIndex = 0;
         int completedIndex = 0;
-        bool shouldStop = false;
+        int shouldStop = 0;
 
         var taskExecutions = tasks.Select(async task =>
         {
-            if (cancellationToken.IsCancellationRequested || shouldStop)
+            if (cancellationToken.IsCancellationRequested || Volatile.Read(ref shouldStop) == 1)
             {
                 lock (lockObj)
                 {
@@ -175,7 +175,7 @@ public sealed class TaskListExecutor : ITaskListExecutor, IDisposable
 
                         if (config.StopOnError)
                         {
-                            shouldStop = true;
+                            Volatile.Write(ref shouldStop, 1);
                         }
                     }
 
