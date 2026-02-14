@@ -180,8 +180,53 @@ public static class Program
             _cancellationTokenSource.Cancel();
         };
 
+        var progressLine = -1;
+        var progressStartTime = DateTime.MinValue;
+        var progressBytes = 0L;
+        
         using var executor = new TaskListExecutor(logger);
+        
+        executor.TaskProgress += (sender, e) =>
+        {
+            if (!string.IsNullOrEmpty(e.CurrentFile) && progressLine >= 0)
+            {
+                if (progressStartTime == DateTime.MinValue)
+                {
+                    progressStartTime = DateTime.UtcNow;
+                    progressBytes = 0;
+                }
+                
+                System.Console.SetCursorPosition(0, progressLine);
+                System.Console.Write(new string(' ', System.Console.WindowWidth - 1));
+                System.Console.SetCursorPosition(0, progressLine);
+                
+                var percent = e.TotalFiles > 0 ? (e.ProcessedFiles * 100 / e.TotalFiles) : 0;
+                var fileName = e.CurrentFile.Length > 50 
+                    ? "..." + e.CurrentFile.Substring(e.CurrentFile.Length - 47) 
+                    : e.CurrentFile;
+                var action = e.Action.ToString().ToLower();
+                
+                var elapsed = (DateTime.UtcNow - progressStartTime).TotalSeconds;
+                var bytesDiff = e.ProcessedBytes - progressBytes;
+                var speed = elapsed > 0 ? bytesDiff / elapsed / (1024 * 1024) : 0;
+                var speedText = speed > 0 ? $" {speed:F1} MB/s" : "";
+                
+                System.Console.Write($"[{e.TaskName}] [{action}] {fileName} ({percent}%){speedText}");
+            }
+        };
+
+        System.Console.WriteLine();
+        progressLine = System.Console.CursorTop;
+        System.Console.WriteLine();
+        
         var result = await executor.ExecuteAsync(executionConfig, _cancellationTokenSource.Token);
+        
+        if (progressLine >= 0)
+        {
+            System.Console.SetCursorPosition(0, progressLine);
+            System.Console.Write(new string(' ', System.Console.WindowWidth - 1));
+            System.Console.SetCursorPosition(0, progressLine);
+        }
 
         PrintTaskListResult(result);
 
@@ -231,15 +276,15 @@ public static class Program
     private static void PrintTaskListResult(TaskListResult result)
     {
         System.Console.WriteLine();
-        System.Console.WriteLine("═══════════════════════════════════════════════════════════");
+        System.Console.WriteLine("===========================================================");
         System.Console.WriteLine("                    Task List Execution                    ");
-        System.Console.WriteLine("═══════════════════════════════════════════════════════════");
+        System.Console.WriteLine("===========================================================");
 
         int index = 0;
         foreach (var taskResult in result.TaskResults)
         {
             index++;
-            var status = taskResult.Skipped ? "⊘" : (taskResult.Success ? "✓" : "✗");
+            var status = taskResult.Skipped ? "[SKIP]" : (taskResult.Success ? "[OK]" : "[FAIL]");
             var statusText = taskResult.Skipped ? "Skipped" : (taskResult.Success ? "Success" : "Failed");
             
             System.Console.WriteLine();
@@ -252,26 +297,26 @@ public static class Program
             else if (taskResult.Success && taskResult.SyncResult != null)
             {
                 var sync = taskResult.SyncResult;
-                System.Console.WriteLine($"      ✓ {statusText} - {sync.FilesCopied} copied, {sync.FilesMoved} moved, {sync.FilesDeleted} deleted");
+                System.Console.WriteLine($"      [OK] {statusText} - {sync.FilesCopied} copied, {sync.FilesMoved} moved, {sync.FilesDeleted} deleted");
                 System.Console.WriteLine($"      {FormatBytes(sync.BytesTransferred)}, {sync.Duration.TotalSeconds:F2}s");
             }
             else
             {
-                System.Console.WriteLine($"      ✗ {statusText}: {taskResult.ErrorMessage}");
+                System.Console.WriteLine($"      [FAIL] {statusText}: {taskResult.ErrorMessage}");
             }
         }
 
         System.Console.WriteLine();
-        System.Console.WriteLine("═══════════════════════════════════════════════════════════");
+        System.Console.WriteLine("===========================================================");
         System.Console.WriteLine("                         Summary                           ");
-        System.Console.WriteLine("═══════════════════════════════════════════════════════════");
+        System.Console.WriteLine("===========================================================");
         System.Console.WriteLine($"  Total Tasks:     {result.TaskResults.Count}");
         System.Console.WriteLine($"  Completed:       {result.TasksCompleted}");
         System.Console.WriteLine($"  Failed:          {result.TasksFailed}");
         System.Console.WriteLine($"  Skipped:         {result.TasksSkipped}");
         System.Console.WriteLine($"  Total Duration:  {result.TotalDuration.TotalSeconds:F2}s");
         System.Console.WriteLine($"  Total Data:      {FormatBytes(result.TotalBytesTransferred)}");
-        System.Console.WriteLine("═══════════════════════════════════════════════════════════");
+        System.Console.WriteLine("===========================================================");
 
         if (result.Errors.Count > 0)
         {
@@ -452,12 +497,57 @@ public static class Program
             options.DryRun = true;
         }
 
-        var result = await _syncEngine!.SyncAsync(options);
+        var progressLine = -1;
+        var progressStartTime = DateTime.MinValue;
+        var progressBytes = 0L;
+        
+        _syncEngine!.ProgressChanged += (sender, e) =>
+        {
+            if (progressLine >= 0)
+            {
+                if (progressStartTime == DateTime.MinValue)
+                {
+                    progressStartTime = DateTime.UtcNow;
+                    progressBytes = 0;
+                }
+                
+                var originalTop = System.Console.CursorTop;
+                System.Console.SetCursorPosition(0, progressLine);
+                System.Console.Write(new string(' ', System.Console.WindowWidth - 1));
+                System.Console.SetCursorPosition(0, progressLine);
+                
+                var percent = e.TotalFiles > 0 ? (e.ProcessedFiles * 100 / e.TotalFiles) : 0;
+                var fileName = e.CurrentFile.Length > 50 
+                    ? "..." + e.CurrentFile.Substring(e.CurrentFile.Length - 47) 
+                    : e.CurrentFile;
+                var action = e.Action.ToString().ToLower();
+                
+                var elapsed = (DateTime.UtcNow - progressStartTime).TotalSeconds;
+                var bytesDiff = e.ProcessedBytes - progressBytes;
+                var speed = elapsed > 0 ? bytesDiff / elapsed / (1024 * 1024) : 0;
+                var speedText = speed > 0 ? $" {speed:F1} MB/s" : "";
+                
+                System.Console.Write($"[{action}] {fileName} ({percent}%){speedText}");
+            }
+        };
 
         System.Console.WriteLine();
-        System.Console.WriteLine("═══════════════════════════════════════════");
+        progressLine = System.Console.CursorTop;
+        System.Console.WriteLine();
+
+        var result = await _syncEngine.SyncAsync(options);
+
+        if (progressLine >= 0)
+        {
+            System.Console.SetCursorPosition(0, progressLine);
+            System.Console.Write(new string(' ', System.Console.WindowWidth - 1));
+            System.Console.SetCursorPosition(0, progressLine);
+        }
+
+        System.Console.WriteLine();
+        System.Console.WriteLine("===========================================");
         System.Console.WriteLine("              Sync Completed               ");
-        System.Console.WriteLine("═══════════════════════════════════════════");
+        System.Console.WriteLine("===========================================");
         System.Console.WriteLine($"  Status:     {(result.Success ? "Success" : "Failed")}");
         System.Console.WriteLine($"  Copied:     {result.FilesCopied}");
         System.Console.WriteLine($"  Moved:      {result.FilesMoved}");
@@ -467,7 +557,7 @@ public static class Program
         System.Console.WriteLine($"  Transferred:{FormatBytes(result.BytesTransferred)}");
         System.Console.WriteLine($"  Duration:   {result.Duration.TotalSeconds:F2}s");
         System.Console.WriteLine($"  Speed:      {result.SpeedMBps:F2} MB/s");
-        System.Console.WriteLine("═══════════════════════════════════════════");
+        System.Console.WriteLine("===========================================");
 
         return result.Success ? 0 : 1;
     }

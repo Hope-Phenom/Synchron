@@ -240,6 +240,11 @@ public sealed class TaskListExecutor : ITaskListExecutor, IDisposable
 
             using var syncEngine = _syncEngineFactory(_logger, fileFilter);
             
+            syncEngine.ProgressChanged += (sender, e) =>
+            {
+                OnFileProgress(task.Name, e.CurrentFile, e.ProcessedFiles, e.TotalFiles, e.ProcessedBytes, e.TotalBytes, e.Action);
+            };
+            
             var syncResult = await syncEngine.SyncAsync(task.Options, cancellationToken);
             
             result.Success = syncResult.Success;
@@ -279,6 +284,20 @@ public sealed class TaskListExecutor : ITaskListExecutor, IDisposable
             Result = taskResult
         });
     }
+    
+    private void OnFileProgress(string taskName, string currentFile, long processedFiles, long totalFiles, long processedBytes, long totalBytes, SyncAction action)
+    {
+        TaskProgress?.Invoke(this, new TaskProgressEventArgs
+        {
+            TaskName = taskName,
+            CurrentFile = currentFile,
+            ProcessedFiles = processedFiles,
+            TotalFiles = totalFiles,
+            ProcessedBytes = processedBytes,
+            TotalBytes = totalBytes,
+            Action = action
+        });
+    }
 
     private static string FormatBytes(long bytes)
     {
@@ -309,4 +328,10 @@ public class TaskProgressEventArgs : EventArgs
     public int CurrentTask { get; set; }
     public int TotalTasks { get; set; }
     public TaskResult Result { get; set; } = new();
+    public string? CurrentFile { get; set; }
+    public long ProcessedFiles { get; set; }
+    public long TotalFiles { get; set; }
+    public long ProcessedBytes { get; set; }
+    public long TotalBytes { get; set; }
+    public SyncAction Action { get; set; }
 }

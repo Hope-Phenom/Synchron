@@ -69,9 +69,9 @@ public sealed class InteractiveMenu : IDisposable
     private void ShowMenu()
     {
         System.Console.WriteLine();
-        System.Console.WriteLine("═══════════════════════════════════════════");
+        System.Console.WriteLine("===========================================");
         System.Console.WriteLine("         Synchron - File Sync Tool         ");
-        System.Console.WriteLine("═══════════════════════════════════════════");
+        System.Console.WriteLine("===========================================");
         System.Console.WriteLine();
         System.Console.WriteLine($"  Source: {_options.SourcePath ?? "(not set)"}");
         System.Console.WriteLine($"  Target: {_options.TargetPath ?? "(not set)"}");
@@ -113,7 +113,7 @@ public sealed class InteractiveMenu : IDisposable
     private void ConfigureSettings()
     {
         System.Console.WriteLine();
-        System.Console.WriteLine("─── Configuration ───");
+        System.Console.WriteLine("--- Configuration ---");
         System.Console.WriteLine();
 
         System.Console.Write($"Source path [{_options.SourcePath}]: ");
@@ -204,7 +204,7 @@ public sealed class InteractiveMenu : IDisposable
     private void ShowCurrentConfig()
     {
         System.Console.WriteLine();
-        System.Console.WriteLine("─── Current Configuration ───");
+        System.Console.WriteLine("--- Current Configuration ---");
         System.Console.WriteLine($"  Source Path:        {_options.SourcePath}");
         System.Console.WriteLine($"  Target Path:        {_options.TargetPath}");
         System.Console.WriteLine($"  Sync Mode:          {_options.Mode}");
@@ -263,7 +263,7 @@ public sealed class InteractiveMenu : IDisposable
     private static void DisplaySyncResult(SyncResult result)
     {
         System.Console.WriteLine();
-        System.Console.WriteLine("─── Sync Result ───");
+        System.Console.WriteLine("--- Sync Result ---");
         System.Console.WriteLine($"  Status:     {(result.Success ? "Success" : "Failed")}");
         System.Console.WriteLine($"  Copied:     {result.FilesCopied}");
         System.Console.WriteLine($"  Moved:      {result.FilesMoved}");
