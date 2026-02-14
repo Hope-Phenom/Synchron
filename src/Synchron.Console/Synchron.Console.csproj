@@ -16,7 +16,7 @@
     <PackageOutputPath>..\..\nupkg</PackageOutputPath>
     
     <PackageId>Synchron</PackageId>
-    <PackageVersion>1.2.0</PackageVersion>
+    <PackageVersion>1.2.1</PackageVersion>
     <Authors>Hope.Phenom</Authors>
     <Description>A fast file synchronization tool with GitIgnore support and task list batch execution.</Description>
     <PackageTags>sync;file;backup;gitignore;mirror;synchronization</PackageTags>
