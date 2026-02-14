@@ -1,4 +1,6 @@
-using System.Text.Json;
+using System.Text;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using Synchron.Core.Interfaces;
 using Synchron.Core.Models;
 
@@ -8,6 +10,14 @@ public class ConfigManager : IConfigManager
 {
     private static readonly string DefaultConfigFileName = "synchron.json";
     private readonly ILogger _logger;
+    
+    private static readonly JsonSerializerSettings JsonSettings = new()
+    {
+        Formatting = Formatting.Indented,
+        NullValueHandling = NullValueHandling.Ignore,
+        ContractResolver = new Newtonsoft.Json.Serialization.CamelCasePropertyNamesContractResolver(),
+        Converters = { new StringEnumConverter() }
+    };
 
     public ConfigManager(ILogger logger)
     {
@@ -26,13 +36,8 @@ public class ConfigManager : IConfigManager
 
         try
         {
-            var json = File.ReadAllText(path);
-            var options = JsonSerializer.Deserialize<SyncOptions>(json, new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true,
-                ReadCommentHandling = JsonCommentHandling.Skip
-            });
-
+            var json = File.ReadAllText(path, Encoding.UTF8);
+            var options = JsonConvert.DeserializeObject<SyncOptions>(json, JsonSettings);
             return options ?? new SyncOptions();
         }
         catch (Exception ex)
@@ -54,13 +59,8 @@ public class ConfigManager : IConfigManager
                 Directory.CreateDirectory(directory);
             }
 
-            var json = JsonSerializer.Serialize(options, new JsonSerializerOptions
-            {
-                WriteIndented = true,
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-            });
-
-            File.WriteAllText(path, json);
+            var json = JsonConvert.SerializeObject(options, JsonSettings);
+            File.WriteAllText(path, json, Encoding.UTF8);
             _logger.Info($"Config saved to: {path}");
         }
         catch (Exception ex)

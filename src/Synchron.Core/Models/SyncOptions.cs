@@ -1,3 +1,5 @@
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using Synchron.Core.Interfaces;
 
 namespace Synchron.Core.Models;
@@ -6,9 +8,16 @@ public class SyncOptions
 {
     public string SourcePath { get; set; } = string.Empty;
     public string TargetPath { get; set; } = string.Empty;
+    
+    [JsonConverter(typeof(StringEnumConverter))]
     public SyncMode Mode { get; set; } = SyncMode.Diff;
+    
+    [JsonConverter(typeof(StringEnumConverter))]
     public ConflictResolution ConflictResolution { get; set; } = ConflictResolution.OverwriteIfNewer;
+    
+    [JsonConverter(typeof(StringEnumConverter))]
     public CompareMethod CompareMethod { get; set; } = CompareMethod.TimestampAndSize;
+    
     public List<string> IncludePatterns { get; set; } = new();
     public List<string> ExcludePatterns { get; set; } = new();
     public bool IncludeSubdirectories { get; set; } = true;
@@ -19,7 +28,10 @@ public class SyncOptions
     public int BufferSize { get; set; } = 1024 * 1024;
     public int MaxRetries { get; set; } = 3;
     public int RetryDelayMs { get; set; } = 1000;
+    
+    [JsonConverter(typeof(StringEnumConverter))]
     public LogLevel LogLevel { get; set; } = LogLevel.Info;
+    
     public string? LogFilePath { get; set; }
     public bool WatchMode { get; set; }
     public int WatchDebounceMs { get; set; } = 500;

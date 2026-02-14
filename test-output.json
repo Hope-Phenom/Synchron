@@ -1,0 +1,38 @@
+﻿{
+  "name": "Test",
+  "tasks": [
+    {
+      "name": "Test Task",
+      "options": {
+        "sourcePath": "C:\\Test",
+        "targetPath": "D:\\Test",
+        "mode": "Mirror",
+        "conflictResolution": "OverwriteIfNewer",
+        "compareMethod": "TimestampAndSize",
+        "includePatterns": [],
+        "excludePatterns": [],
+        "includeSubdirectories": true,
+        "dryRun": false,
+        "verifyHash": false,
+        "preserveTimestamps": true,
+        "preserveAttributes": true,
+        "bufferSize": 1048576,
+        "maxRetries": 3,
+        "retryDelayMs": 1000,
+        "logLevel": "Info",
+        "watchMode": false,
+        "watchDebounceMs": 500,
+        "gitIgnore": {
+          "enabled": true,
+          "autoDetect": true,
+          "overrideAutoDetect": false
+        }
+      },
+      "enabled": true
+    }
+  ],
+  "stopOnError": true,
+  "maxParallelTasks": 1,
+  "enabledTaskCount": 1,
+  "totalTaskCount": 1
+}
