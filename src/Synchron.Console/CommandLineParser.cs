@@ -6,11 +6,27 @@ namespace Synchron.Console;
 
 public static class CommandLineParser
 {
-    private static readonly string Version = "1.1.0";
+    private static readonly string Version = "1.2.0";
 
     public static CommandLineOptions Parse(string[] args)
     {
         var options = new CommandLineOptions();
+
+        if (args.Length > 0 && !args[0].StartsWith('-') && !args[0].StartsWith('/'))
+        {
+            if (args[0].Equals("task", StringComparison.OrdinalIgnoreCase))
+            {
+                options.IsTaskListMode = true;
+                return ParseTaskListArgs(args.Skip(1).ToArray(), options);
+            }
+            
+            if (args[0].Equals("task-init", StringComparison.OrdinalIgnoreCase))
+            {
+                options.IsTaskListMode = true;
+                options.InitTaskList = true;
+                return options;
+            }
+        }
 
         for (int i = 0; i < args.Length; i++)
         {
@@ -143,6 +159,69 @@ public static class CommandLineParser
         return options;
     }
 
+    private static CommandLineOptions ParseTaskListArgs(string[] args, CommandLineOptions options)
+    {
+        for (int i = 0; i < args.Length; i++)
+        {
+            var arg = args[i];
+
+            if (arg.StartsWith('-') || arg.StartsWith('/'))
+            {
+                var (key, value) = ParseArgument(arg);
+
+                switch (key.ToLowerInvariant())
+                {
+                    case "h":
+                    case "help":
+                    case "?":
+                        options.ShowHelp = true;
+                        break;
+
+                    case "dry-run":
+                    case "dryrun":
+                        options.DryRun = true;
+                        break;
+
+                    case "t":
+                    case "task":
+                        options.TaskName = value ?? GetNextArg(args, ref i);
+                        break;
+
+                    case "list":
+                        options.ListTasks = true;
+                        break;
+
+                    case "l":
+                    case "log":
+                    case "loglevel":
+                        options.LogLevel = ParseLogLevel(value ?? GetNextArg(args, ref i));
+                        break;
+
+                    case "verbose":
+                        options.Verbose = true;
+                        break;
+
+                    case "logfile":
+                        options.LogFilePath = value ?? GetNextArg(args, ref i);
+                        break;
+
+                    default:
+                        System.Console.WriteLine($"Unknown option: {arg}");
+                        break;
+                }
+            }
+            else
+            {
+                if (string.IsNullOrEmpty(options.TaskListPath))
+                {
+                    options.TaskListPath = arg;
+                }
+            }
+        }
+
+        return options;
+    }
+
     private static (string key, string? value) ParseArgument(string arg)
     {
         var cleanArg = arg.TrimStart('-', '/');
@@ -211,7 +290,10 @@ public static class CommandLineParser
         help.AppendLine("Synchron - Fast File Synchronization Tool");
         help.AppendLine($"Version: {Version}");
         help.AppendLine();
-        help.AppendLine("Usage: Synchron <source> <target> [options]");
+        help.AppendLine("Usage:");
+        help.AppendLine("  Synchron <source> <target> [options]    Single sync operation");
+        help.AppendLine("  Synchron task <tasks.json> [options]    Execute task list");
+        help.AppendLine("  Synchron task-init                      Create sample task list");
         help.AppendLine();
         help.AppendLine("Arguments:");
         help.AppendLine("  <source>       Source directory path");
@@ -237,6 +319,13 @@ public static class CommandLineParser
         help.AppendLine("      --gitignore <file>  Use external .gitignore file");
         help.AppendLine("      --force-gitignore   Force use specified GitIgnore (skip auto-detection)");
         help.AppendLine();
+        help.AppendLine("Task List Options:");
+        help.AppendLine("  Synchron task <tasks.json>              Execute all enabled tasks");
+        help.AppendLine("  Synchron task <tasks.json> --list       List all tasks in config");
+        help.AppendLine("  Synchron task <tasks.json> -t <name>    Execute specific task by name");
+        help.AppendLine("  Synchron task <tasks.json> --dry-run    Preview all tasks");
+        help.AppendLine("  Synchron task-init                      Create sample tasks.json file");
+        help.AppendLine();
         help.AppendLine("Sync Modes:");
         help.AppendLine("  diff    Copy new and changed files only (default)");
         help.AppendLine("  sync    Same as diff, ensure target matches source");
@@ -255,6 +344,58 @@ public static class CommandLineParser
         help.AppendLine("  Synchron C:\\Source D:\\Backup --no-gitignore");
         help.AppendLine("  Synchron C:\\Source D:\\Backup --gitignore .\\my-ignore.txt");
         help.AppendLine("  Synchron C:\\Source D:\\Backup --gitignore .\\ignore.txt --force-gitignore");
+        help.AppendLine("  Synchron task tasks.json");
+        help.AppendLine("  Synchron task tasks.json --list");
+        help.AppendLine("  Synchron task tasks.json -t \"Documents Backup\"");
+        help.AppendLine("  Synchron task tasks.json --dry-run");
+        help.AppendLine("  Synchron task-init");
+        help.AppendLine();
+
+        System.Console.WriteLine(help.ToString());
+    }
+
+    public static void ShowTaskListHelp()
+    {
+        var help = new StringBuilder();
+        help.AppendLine();
+        help.AppendLine("Synchron Task List - Batch Execution Mode");
+        help.AppendLine($"Version: {Version}");
+        help.AppendLine();
+        help.AppendLine("Usage:");
+        help.AppendLine("  Synchron task <tasks.json> [options]    Execute task list");
+        help.AppendLine("  Synchron task-init                      Create sample task list");
+        help.AppendLine();
+        help.AppendLine("Task List Options:");
+        help.AppendLine("      --list               List all tasks in config file");
+        help.AppendLine("  -t, --task <name>        Execute specific task by name");
+        help.AppendLine("      --dry-run            Preview tasks without executing");
+        help.AppendLine("  -l, --log <level>        Log level: debug, info, warn, error");
+        help.AppendLine("      --verbose            Show detailed output");
+        help.AppendLine("      --logfile <path>     Write logs to file");
+        help.AppendLine();
+        help.AppendLine("Task List Config Format (JSON):");
+        help.AppendLine("  {");
+        help.AppendLine("    \"name\": \"My Backup Tasks\",");
+        help.AppendLine("    \"stopOnError\": false,");
+        help.AppendLine("    \"tasks\": [");
+        help.AppendLine("      {");
+        help.AppendLine("        \"name\": \"Documents Backup\",");
+        help.AppendLine("        \"enabled\": true,");
+        help.AppendLine("        \"options\": {");
+        help.AppendLine("          \"sourcePath\": \"C:\\\\Users\\\\User\\\\Documents\",");
+        help.AppendLine("          \"targetPath\": \"D:\\\\Backup\\\\Documents\",");
+        help.AppendLine("          \"mode\": \"Sync\"");
+        help.AppendLine("        }");
+        help.AppendLine("      }");
+        help.AppendLine("    ]");
+        help.AppendLine("  }");
+        help.AppendLine();
+        help.AppendLine("Examples:");
+        help.AppendLine("  Synchron task tasks.json                  Execute all enabled tasks");
+        help.AppendLine("  Synchron task tasks.json --list           List all tasks");
+        help.AppendLine("  Synchron task tasks.json -t \"Backup\"      Execute task named \"Backup\"");
+        help.AppendLine("  Synchron task tasks.json --dry-run        Preview all tasks");
+        help.AppendLine("  Synchron task-init                        Create sample tasks.json");
         help.AppendLine();
 
         System.Console.WriteLine(help.ToString());

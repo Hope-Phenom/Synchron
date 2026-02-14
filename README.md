@@ -9,7 +9,7 @@
 [![.NET](https://img.shields.io/badge/.NET-8.0-512BD4?style=flat-square&logo=dotnet)](https://dotnet.microsoft.com/)
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
 [![Build](https://img.shields.io/badge/Build-Passing-brightgreen?style=flat-square)]()
-[![Tests](https://img.shields.io/badge/Tests-62%20Passed-success?style=flat-square)]()
+[![Tests](https://img.shields.io/badge/Tests-83%20Passed-success?style=flat-square)]()
 
 [English](#english) | [中文文档](#中文文档)
 
@@ -222,7 +222,10 @@ Synchron C:\Source D:\Backup --dry-run
 ### 命令行参数
 
 ```
-Synchron <source> <target> [options]
+Usage:
+  Synchron <source> <target> [options]    单次同步操作
+  Synchron task <tasks.json> [options]    执行任务列表
+  Synchron task-init                      创建示例任务列表
 
 参数:
   <source>       源目录路径
@@ -249,6 +252,13 @@ GitIgnore 选项:
       --no-gitignore      禁用 GitIgnore 自动检测
       --gitignore <file>  使用外部 .gitignore 文件
       --force-gitignore   强制使用指定的 GitIgnore (跳过自动检测)
+
+任务列表选项:
+  Synchron task <tasks.json>              执行所有启用的任务
+  Synchron task <tasks.json> --list       列出所有任务
+  Synchron task <tasks.json> -t <name>    执行指定任务
+  Synchron task <tasks.json> --dry-run    预览所有任务
+  Synchron task-init                      创建示例任务列表文件
 ```
 
 ### 同步模式详解
@@ -446,6 +456,184 @@ logs/
 
 ### 实时监控模式
 
+### 任务列表功能
+
+Synchron 支持通过任务列表配置文件批量执行多个同步任务，适用于需要定期同步多个目录的场景。
+
+#### 创建任务列表
+
+```bash
+# 创建示例任务列表配置文件
+Synchron task-init
+```
+
+这将创建一个 `tasks.json` 示例文件：
+
+```json
+{
+  "name": "Sample Task List",
+  "stopOnError": false,
+  "maxParallelTasks": 1,
+  "tasks": [
+    {
+      "name": "Documents Backup",
+      "description": "Sync documents to backup folder",
+      "enabled": true,
+      "options": {
+        "sourcePath": "C:\\Users\\User\\Documents",
+        "targetPath": "D:\\Backup\\Documents",
+        "mode": "Sync",
+        "includeSubdirectories": true,
+        "gitIgnore": {
+          "enabled": true,
+          "autoDetect": true
+        }
+      }
+    },
+    {
+      "name": "Photos Backup",
+      "description": "Mirror photos to external drive",
+      "enabled": true,
+      "options": {
+        "sourcePath": "D:\\Photos",
+        "targetPath": "E:\\Photos",
+        "mode": "Mirror",
+        "includeSubdirectories": true
+      }
+    }
+  ]
+}
+```
+
+#### 执行任务列表
+
+```bash
+# 执行所有启用的任务
+Synchron task tasks.json
+
+# 列出所有任务
+Synchron task tasks.json --list
+
+# 执行特定任务
+Synchron task tasks.json -t "Documents Backup"
+
+# 预览模式（不实际执行）
+Synchron task tasks.json --dry-run
+
+# 详细日志
+Synchron task tasks.json --verbose
+```
+
+#### 任务列表命令行选项
+
+```
+Synchron task <tasks.json> [options]
+
+选项:
+      --list               列出配置文件中的所有任务
+  -t, --task <name>        执行指定名称的任务
+      --dry-run            预览模式，不实际执行
+  -l, --log <level>        日志级别: debug, info, warn, error
+      --verbose            详细输出
+      --logfile <path>     日志文件路径
+  -h, --help               显示帮助信息
+```
+
+#### 任务列表配置选项
+
+| 选项 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `name` | string | `null` | 任务列表名称 |
+| `stopOnError` | bool | `true` | 遇到错误时是否停止后续任务 |
+| `maxParallelTasks` | int | `1` | 最大并行任务数（1=串行） |
+| `tasks` | array | `[]` | 任务列表 |
+
+#### 任务配置选项
+
+| 选项 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `name` | string | 必填 | 任务名称 |
+| `description` | string | `null` | 任务描述 |
+| `enabled` | bool | `true` | 是否启用 |
+| `options` | object | 必填 | 同步选项（同 SyncOptions） |
+
+#### 执行结果示例
+
+```
+═══════════════════════════════════════════════════════════
+                    Task List Execution                    
+═══════════════════════════════════════════════════════════
+
+[1] Documents Backup... ✓
+      ✓ Success - 156 copied, 0 moved, 0 deleted
+      23.45 MB, 2.34s
+
+[2] Photos Backup... ✓
+      ✓ Success - 89 copied, 0 moved, 0 deleted
+      1.23 GB, 15.67s
+
+═══════════════════════════════════════════════════════════
+                         Summary                           
+═══════════════════════════════════════════════════════════
+  Total Tasks:     2
+  Completed:       2
+  Failed:          0
+  Skipped:         0
+  Total Duration:  18.01s
+  Total Data:      1.25 GB
+═══════════════════════════════════════════════════════════
+```
+
+#### 使用场景
+
+**场景一：日常备份脚本**
+
+创建 `daily-backup.json`：
+```json
+{
+  "name": "Daily Backup",
+  "stopOnError": false,
+  "tasks": [
+    {
+      "name": "Documents",
+      "enabled": true,
+      "options": {
+        "sourcePath": "C:\\Users\\User\\Documents",
+        "targetPath": "\\\\NAS\\Backup\\Documents",
+        "mode": "Sync"
+      }
+    },
+    {
+      "name": "Photos",
+      "enabled": true,
+      "options": {
+        "sourcePath": "D:\\Photos",
+        "targetPath": "\\\\NAS\\Backup\\Photos",
+        "mode": "Mirror"
+      }
+    }
+  ]
+}
+```
+
+通过 Windows 任务计划程序定时执行：
+```batch
+Synchron task daily-backup.json --logfile C:\Logs\backup.log
+```
+
+**场景二：选择性执行**
+
+```bash
+# 仅执行文档备份
+Synchron task tasks.json -t "Documents"
+
+# 先预览再执行
+Synchron task tasks.json --dry-run
+Synchron task tasks.json
+```
+
+### 实时监控模式
+
 ```bash
 # 启动监控模式
 Synchron C:\Source D:\Backup -w
@@ -582,16 +770,26 @@ Synchron/
 │   │   │   ├── ILogger.cs             #   日志接口
 │   │   │   ├── ISyncEngine.cs         #   同步引擎接口
 │   │   │   ├── IFileWatcher.cs        #   文件监控接口
-│   │   │   └── IConfigManager.cs      #   配置管理接口
+│   │   │   ├── IConfigManager.cs      #   配置管理接口
+│   │   │   └── ITaskListExecutor.cs   #   任务列表执行器接口
 │   │   ├── Models/                    # 数据模型
 │   │   │   ├── SyncOptions.cs         #   同步选项
 │   │   │   ├── SyncResult.cs          #   同步结果
+│   │   │   ├── SyncTask.cs            #   同步任务
+│   │   │   ├── TaskListConfig.cs      #   任务列表配置
 │   │   │   └── FileItem.cs            #   文件项
+│   │   ├── GitSupport/                # GitIgnore 支持
+│   │   │   ├── GitIgnoreParser.cs     #   GitIgnore 解析器
+│   │   │   ├── GitEnvironmentDetector.cs  # Git 环境检测
+│   │   │   ├── GitIgnoreRuleCache.cs  #   规则缓存
+│   │   │   └── GitIgnoreRule.cs       #   规则模型
 │   │   ├── Logger.cs                  # 日志实现
 │   │   ├── ConfigManager.cs           # 配置管理
 │   │   ├── FileFilter.cs              # 文件过滤
 │   │   ├── SyncEngine.cs              # 同步引擎
 │   │   ├── FileWatcher.cs             # 文件监控
+│   │   ├── TaskListExecutor.cs        # 任务列表执行器
+│   │   ├── TaskListManager.cs         # 任务列表管理器
 │   │   └── Synchron.Core.csproj
 │   │
 │   └── Synchron.Console/              # 控制台应用
@@ -607,6 +805,12 @@ Synchron/
 │       ├── FileFilterTests.cs
 │       ├── ConfigManagerTests.cs
 │       ├── SyncEngineTests.cs
+│       ├── GitIgnoreParserTests.cs
+│       ├── GitEnvironmentDetectorTests.cs
+│       ├── GitIgnoreRuleCacheTests.cs
+│       ├── FileFilterGitIntegrationTests.cs
+│       ├── TaskListExecutorTests.cs
+│       ├── TaskListManagerTests.cs
 │       └── Synchron.Core.Tests.csproj
 │
 ├── Synchron.slnx                      # 解决方案文件
@@ -1014,6 +1218,12 @@ Synchron C:\Source D:\Backup -m mirror --dry-run
 
 # Watch mode
 Synchron C:\Source D:\Backup -w
+
+# Task list mode
+Synchron task-init                    # Create sample tasks.json
+Synchron task tasks.json              # Execute all tasks
+Synchron task tasks.json --list       # List all tasks
+Synchron task tasks.json -t "Backup"  # Execute specific task
 ```
 
 ### Requirements

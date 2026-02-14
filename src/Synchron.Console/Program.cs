@@ -17,7 +17,14 @@ public static class Program
 
         if (cmdOptions.ShowHelp)
         {
-            CommandLineParser.ShowHelp();
+            if (cmdOptions.IsTaskListMode)
+            {
+                CommandLineParser.ShowTaskListHelp();
+            }
+            else
+            {
+                CommandLineParser.ShowHelp();
+            }
             return 0;
         }
 
@@ -25,6 +32,11 @@ public static class Program
         {
             CommandLineParser.ShowVersion();
             return 0;
+        }
+
+        if (cmdOptions.IsTaskListMode)
+        {
+            return await RunTaskListMode(cmdOptions);
         }
 
         InitializeServices(cmdOptions);
@@ -57,6 +69,194 @@ public static class Program
         }
 
         return await RunSyncMode(syncOptions, cmdOptions.DryRun);
+    }
+
+    private static async Task<int> RunTaskListMode(CommandLineOptions cmdOptions)
+    {
+        var logLevel = cmdOptions.LogLevel ?? (cmdOptions.Verbose ? LogLevel.Debug : LogLevel.Info);
+        _logger = new Logger(logLevel, cmdOptions.LogFilePath);
+
+        if (cmdOptions.InitTaskList)
+        {
+            return await CreateSampleTaskList();
+        }
+
+        if (string.IsNullOrEmpty(cmdOptions.TaskListPath))
+        {
+            System.Console.WriteLine("Error: Task list config file path is required.");
+            System.Console.WriteLine("Usage: Synchron task <tasks.json> [options]");
+            return 1;
+        }
+
+        var taskListPath = Path.GetFullPath(cmdOptions.TaskListPath);
+        var taskListManager = new TaskListManager(_logger);
+
+        TaskListConfig config;
+        try
+        {
+            config = taskListManager.Load(taskListPath);
+        }
+        catch (FileNotFoundException ex)
+        {
+            _logger.Error(ex.Message);
+            return 1;
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.Error($"Failed to parse task list config: {ex.Message}");
+            return 1;
+        }
+
+        if (cmdOptions.ListTasks)
+        {
+            var taskList = taskListManager.ListTasks(config);
+            foreach (var line in taskList)
+            {
+                System.Console.WriteLine(line);
+            }
+            return 0;
+        }
+
+        var validation = taskListManager.Validate(config);
+        if (!validation.IsValid)
+        {
+            _logger.Error("Task list validation failed:");
+            foreach (var error in validation.Errors)
+            {
+                _logger.Error($"  - {error}");
+            }
+            return 1;
+        }
+
+        if (validation.Warnings.Count > 0)
+        {
+            _logger.Warning("Task list validation warnings:");
+            foreach (var warning in validation.Warnings)
+            {
+                _logger.Warning($"  - {warning}");
+            }
+        }
+
+        if (!string.IsNullOrEmpty(cmdOptions.TaskName))
+        {
+            var task = config.Tasks.FirstOrDefault(t => 
+                t.Name.Equals(cmdOptions.TaskName, StringComparison.OrdinalIgnoreCase));
+            
+            if (task == null)
+            {
+                _logger.Error($"Task not found: {cmdOptions.TaskName}");
+                return 1;
+            }
+
+            if (!task.Enabled)
+            {
+                _logger.Warning($"Task '{task.Name}' is disabled. Use --list to see all tasks.");
+                return 0;
+            }
+
+            config.Tasks = new List<SyncTask> { task };
+            config.StopOnError = true;
+        }
+
+        if (cmdOptions.DryRun)
+        {
+            foreach (var task in config.Tasks.Where(t => t.Enabled))
+            {
+                task.Options.DryRun = true;
+            }
+        }
+
+        using var executor = new TaskListExecutor(_logger);
+        var result = await executor.ExecuteAsync(config);
+
+        PrintTaskListResult(result);
+
+        return result.Success ? 0 : 1;
+    }
+
+    private static async Task<int> CreateSampleTaskList()
+    {
+        var taskListManager = new TaskListManager(_logger!);
+        var sampleConfig = taskListManager.CreateSampleConfig();
+        
+        var outputPath = Path.Combine(Directory.GetCurrentDirectory(), "tasks.json");
+        
+        if (File.Exists(outputPath))
+        {
+            System.Console.WriteLine($"File already exists: {outputPath}");
+            System.Console.Write("Overwrite? (y/N): ");
+            var input = System.Console.ReadLine();
+            if (!input?.Equals("y", StringComparison.OrdinalIgnoreCase) == true)
+            {
+                System.Console.WriteLine("Cancelled.");
+                return 0;
+            }
+        }
+
+        taskListManager.Save(sampleConfig, outputPath);
+        
+        System.Console.WriteLine($"Sample task list created: {outputPath}");
+        System.Console.WriteLine();
+        System.Console.WriteLine("Edit the file to configure your sync tasks, then run:");
+        System.Console.WriteLine($"  Synchron task {outputPath}");
+        
+        return 0;
+    }
+
+    private static void PrintTaskListResult(TaskListResult result)
+    {
+        System.Console.WriteLine();
+        System.Console.WriteLine("═══════════════════════════════════════════════════════════");
+        System.Console.WriteLine("                    Task List Execution                    ");
+        System.Console.WriteLine("═══════════════════════════════════════════════════════════");
+
+        int index = 0;
+        foreach (var taskResult in result.TaskResults)
+        {
+            index++;
+            var status = taskResult.Skipped ? "⊘" : (taskResult.Success ? "✓" : "✗");
+            var statusText = taskResult.Skipped ? "Skipped" : (taskResult.Success ? "Success" : "Failed");
+            
+            System.Console.WriteLine();
+            System.Console.WriteLine($"[{index}] {taskResult.TaskName}... {status}");
+            
+            if (taskResult.Skipped)
+            {
+                System.Console.WriteLine($"      Skipped: {taskResult.ErrorMessage}");
+            }
+            else if (taskResult.Success && taskResult.SyncResult != null)
+            {
+                var sync = taskResult.SyncResult;
+                System.Console.WriteLine($"      ✓ {statusText} - {sync.FilesCopied} copied, {sync.FilesMoved} moved, {sync.FilesDeleted} deleted");
+                System.Console.WriteLine($"      {FormatBytes(sync.BytesTransferred)}, {sync.Duration.TotalSeconds:F2}s");
+            }
+            else
+            {
+                System.Console.WriteLine($"      ✗ {statusText}: {taskResult.ErrorMessage}");
+            }
+        }
+
+        System.Console.WriteLine();
+        System.Console.WriteLine("═══════════════════════════════════════════════════════════");
+        System.Console.WriteLine("                         Summary                           ");
+        System.Console.WriteLine("═══════════════════════════════════════════════════════════");
+        System.Console.WriteLine($"  Total Tasks:     {result.TaskResults.Count}");
+        System.Console.WriteLine($"  Completed:       {result.TasksCompleted}");
+        System.Console.WriteLine($"  Failed:          {result.TasksFailed}");
+        System.Console.WriteLine($"  Skipped:         {result.TasksSkipped}");
+        System.Console.WriteLine($"  Total Duration:  {result.TotalDuration.TotalSeconds:F2}s");
+        System.Console.WriteLine($"  Total Data:      {FormatBytes(result.TotalBytesTransferred)}");
+        System.Console.WriteLine("═══════════════════════════════════════════════════════════");
+
+        if (result.Errors.Count > 0)
+        {
+            System.Console.WriteLine();
+            System.Console.WriteLine("Errors:");
+            foreach (var error in result.Errors)
+            {
+                System.Console.WriteLine($"  - {error}");
+            }
+        }
     }
 
     private static void InitializeServices(CommandLineOptions cmdOptions)

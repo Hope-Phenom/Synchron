@@ -27,4 +27,10 @@ public class CommandLineOptions
     public bool NoGitIgnore { get; set; }
     public string? GitIgnoreFile { get; set; }
     public bool ForceGitIgnore { get; set; }
+
+    public bool IsTaskListMode { get; set; }
+    public string? TaskListPath { get; set; }
+    public string? TaskName { get; set; }
+    public bool ListTasks { get; set; }
+    public bool InitTaskList { get; set; }
 }
