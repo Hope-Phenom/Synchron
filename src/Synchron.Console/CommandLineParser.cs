@@ -6,7 +6,7 @@ namespace Synchron.Console;
 
 public static class CommandLineParser
 {
-    private static readonly string Version = "1.2.2";
+    private static readonly string Version = "1.2.3";
 
     public static CommandLineOptions Parse(string[] args)
     {
