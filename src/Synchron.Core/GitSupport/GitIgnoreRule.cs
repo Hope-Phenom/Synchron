@@ -35,9 +35,6 @@ public sealed class GitIgnoreRule
         if (CompiledRegex is null)
             return false;
 
-        if (IsDirectoryOnly && !isDirectory)
-            return false;
-
         return CompiledRegex.IsMatch(relativePath);
     }
 

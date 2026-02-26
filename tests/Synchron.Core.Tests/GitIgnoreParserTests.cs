@@ -94,13 +94,40 @@ public class GitIgnoreParserTests
     }
 
     [Fact]
-    public void IsIgnored_DirectoryOnly_OnlyMatchesDirectories()
+    public void IsIgnored_DirectoryOnly_MatchesDirectoryAndContents()
     {
         var content = "node_modules/\n";
         var rules = _parser.ParseContent(content, "test.gitignore");
         
         Assert.True(_parser.IsIgnored("node_modules", true, rules));
-        Assert.False(_parser.IsIgnored("node_modules", false, rules));
+        Assert.True(_parser.IsIgnored("node_modules", false, rules));
+        Assert.True(_parser.IsIgnored("node_modules/package.json", false, rules));
+        Assert.True(_parser.IsIgnored("node_modules/subdir/file.js", false, rules));
+    }
+
+    [Fact]
+    public void IsIgnored_DirectoryRule_MatchesFilesInside()
+    {
+        var content = "bin/\n";
+        var rules = _parser.ParseContent(content, "test.gitignore");
+        
+        Assert.True(_parser.IsIgnored("bin", true, rules));
+        Assert.True(_parser.IsIgnored("bin/file.txt", false, rules));
+        Assert.True(_parser.IsIgnored("bin/subdir/file.dll", false, rules));
+        Assert.True(_parser.IsIgnored("bin/debug/app.exe", false, rules));
+    }
+
+    [Fact]
+    public void IsIgnored_NestedDirectoryRule_MatchesNestedFiles()
+    {
+        var content = "build/output/\n";
+        var rules = _parser.ParseContent(content, "test.gitignore");
+        
+        Assert.True(_parser.IsIgnored("build/output", true, rules));
+        Assert.True(_parser.IsIgnored("build/output/result.txt", false, rules));
+        Assert.True(_parser.IsIgnored("build/output/debug/app.exe", false, rules));
+        Assert.False(_parser.IsIgnored("build", true, rules));
+        Assert.False(_parser.IsIgnored("build/input.txt", false, rules));
     }
 
     [Fact]

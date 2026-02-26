@@ -220,44 +220,10 @@ public sealed class SyncEngine : ISyncEngine, IDisposable
 
         try
         {
-            var searchOption = includeSubdirectories ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
-            
             await Task.Run(() =>
             {
                 var directoryInfo = new DirectoryInfo(path);
-                
-                if (includeSubdirectories)
-                {
-                    foreach (var dir in directoryInfo.EnumerateDirectories("*", searchOption))
-                    {
-                        if (cancellationToken.IsCancellationRequested)
-                            break;
-                        
-                        try
-                        {
-                            files.Add(FileItem.FromDirectoryInfo(dir, path));
-                        }
-                        catch (UnauthorizedAccessException)
-                        {
-                            _logger.Warning($"Access denied to directory: {dir.FullName}");
-                        }
-                    }
-                }
-
-                foreach (var file in directoryInfo.EnumerateFiles("*", searchOption))
-                {
-                    if (cancellationToken.IsCancellationRequested)
-                        break;
-                    
-                    try
-                    {
-                        files.Add(FileItem.FromFileInfo(file, path));
-                    }
-                    catch (UnauthorizedAccessException)
-                    {
-                        _logger.Warning($"Access denied to file: {file.FullName}");
-                    }
-                }
+                EnumerateFilesRecursive(directoryInfo, path, files, includeSubdirectories, cancellationToken);
             }, cancellationToken);
         }
         catch (Exception ex)
@@ -266,6 +232,62 @@ public sealed class SyncEngine : ISyncEngine, IDisposable
         }
 
         return files;
+    }
+
+    private void EnumerateFilesRecursive(DirectoryInfo directoryInfo, string basePath, List<FileItem> files, bool includeSubdirectories, CancellationToken cancellationToken)
+    {
+        if (cancellationToken.IsCancellationRequested)
+            return;
+
+        try
+        {
+            foreach (var dir in directoryInfo.EnumerateDirectories("*", SearchOption.TopDirectoryOnly))
+            {
+                if (cancellationToken.IsCancellationRequested)
+                    break;
+
+                try
+                {
+                    var dirItem = FileItem.FromDirectoryInfo(dir, basePath);
+                    
+                    if (!_fileFilter.IsMatch(dirItem.RelativePath, true))
+                    {
+                        _logger.Debug($"Directory excluded by filter: {dirItem.RelativePath}");
+                        continue;
+                    }
+                    
+                    files.Add(dirItem);
+                    
+                    if (includeSubdirectories)
+                    {
+                        EnumerateFilesRecursive(dir, basePath, files, true, cancellationToken);
+                    }
+                }
+                catch (UnauthorizedAccessException)
+                {
+                    _logger.Warning($"Access denied to directory: {dir.FullName}");
+                }
+            }
+
+            foreach (var file in directoryInfo.EnumerateFiles("*", SearchOption.TopDirectoryOnly))
+            {
+                if (cancellationToken.IsCancellationRequested)
+                    break;
+
+                try
+                {
+                    files.Add(FileItem.FromFileInfo(file, basePath));
+                }
+                catch (UnauthorizedAccessException)
+                {
+                    _logger.Warning($"Access denied to file: {file.FullName}");
+                }
+            }
+        }
+        catch (UnauthorizedAccessException)
+        {
+            _logger.Warning($"Access denied to directory: {directoryInfo.FullName}");
+        }
     }
 
     private SyncAction DetermineAction(FileItem sourceFile, string targetPath, SyncOptions options)

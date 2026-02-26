@@ -202,14 +202,7 @@ public sealed class GitIgnoreParser : IGitIgnoreParser
             i++;
         }
 
-        if (isDirectoryOnly)
-        {
-            sb.Append("(?:/|$)");
-        }
-        else
-        {
-            sb.Append("(?:/.*)?$");
-        }
+        sb.Append("(?:/.*)?$");
 
         return sb.ToString();
     }
